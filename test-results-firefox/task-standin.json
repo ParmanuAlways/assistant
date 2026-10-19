@@ -1,0 +1,24 @@
+{
+  "task": "Apply casual leave for 3 days from Monday, reason: family function",
+  "status": "completed",
+  "seconds": 16,
+  "questions": [
+    "What is your emergency contact number (10 digits)? I'll remember it for next time."
+  ],
+  "confirmations": 1,
+  "saved": {
+    "id": 1,
+    "ref": "LR-1001",
+    "username": "ravi",
+    "emp_id": "EMP1042",
+    "leave_type": "Casual Leave",
+    "from_date": "2026-10-19",
+    "to_date": "2026-10-21",
+    "days": 3,
+    "reason": "family function",
+    "emergency_contact": "9123456780",
+    "manager": "Priya Sharma",
+    "status": "Pending",
+    "created_at": "2026-10-19 11:05:14"
+  }
+}

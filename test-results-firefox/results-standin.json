@@ -1,0 +1,72 @@
+[
+  {
+    "name": "Real Firefox running",
+    "ok": true,
+    "detail": "Firefox 158.0"
+  },
+  {
+    "name": "Extension installs in Firefox (temporary add-on)",
+    "ok": true,
+    "detail": "office-assistant@office.local"
+  },
+  {
+    "name": "Firefox identity redirect URL",
+    "ok": true,
+    "detail": "https://92890d79a08f9ccf7a7b0a607806393e8bfcda07.extensions.allizom.org/"
+  },
+  {
+    "name": "Keycloak sign-in from the Firefox extension",
+    "ok": true,
+    "detail": "Hello, Ravi Kumar (EMP1042)"
+  },
+  {
+    "name": "Profile filled from the company directory",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Settings: test connection to the model",
+    "ok": true,
+    "detail": "\u2705 Connected (164 ms) \u00b7 structured output: JSON schema \u00b7 system role: yes"
+  },
+  {
+    "name": "Agent task completed in Firefox (16s)",
+    "ok": true,
+    "detail": "ick element [13]\nThe page confirms success.\nLeave request LR-1001 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
+  },
+  {
+    "name": "Assistant asked for missing details and asked for confirmation",
+    "ok": true,
+    "detail": "questions=[\"What is your emergency contact number (10 digits)? I'll remember it for next time.\"] confirmations=1"
+  },
+  {
+    "name": "Leave really saved with the right details",
+    "ok": true,
+    "detail": "{\"id\": 1, \"ref\": \"LR-1001\", \"username\": \"ravi\", \"emp_id\": \"EMP1042\", \"leave_type\": \"Casual Leave\", \"from_date\": \"2026-10-19\", \"to_date\": \"2026-10-21\", \"days\": 3, \"reason\": \"family function\", \"emergency_contact\": \"9123456780\", \"manager\": \"Priya Sharma\", \"status\": \"Pending\", \"created_at\": \"2026-10-19 "
+  },
+  {
+    "name": "History timeline with audit events",
+    "ok": true,
+    "detail": "action_result, confirmation, model_action, page_snapshot, profile_learned, screenshot, task_finished, user_answer, user_message"
+  },
+  {
+    "name": "Screenshots captured in Firefox and shown",
+    "ok": true,
+    "detail": "2 images"
+  },
+  {
+    "name": "Teach mode records clicks and pages in Firefox",
+    "ok": true,
+    "detail": "Opened \"Submitted \u2013 HR Portal\" (http://hr.office.local:8200/leave/success/LR-1001) | Opened \"Home \u2013 HR Portal\" (http://hr.office.local:8200/) | Clicked link \"My Leaves\" | Opened \"My Leaves \u2013 HR Portal\" (http://hr.office.local:8200/leaves)"
+  },
+  {
+    "name": "Sign-out clears the session",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Auditor dashboard + integrity check in Firefox",
+    "ok": true,
+    "detail": "\u2714 Chain valid \u2014 44 events checked"
+  }
+]

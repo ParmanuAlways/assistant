@@ -2,6 +2,7 @@
 
 Mirrors what you would click through in the Keycloak admin console. Safe to re-run.
 """
+import hashlib
 import pathlib
 import sys
 
@@ -48,7 +49,9 @@ def main():
         "browser-agent": {
             "clientId": "browser-agent", "name": "Office Assistant extension", "publicClient": True,
             "standardFlowEnabled": True, "directAccessGrantsEnabled": False,
-            "redirectUris": [f"https://{EXT_ID}.chromiumapp.org/*"],
+            # Chrome: https://<extension id>.chromiumapp.org/ ; Firefox: https://<sha1 of the gecko id>.extensions.allizom.org/
+            "redirectUris": [f"https://{EXT_ID}.chromiumapp.org/*",
+                             f"https://{hashlib.sha1(b'office-assistant@office.local').hexdigest()}.extensions.allizom.org/*"],
             "attributes": {"pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "+"},
             "protocolMappers": [
                 {"name": a, "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper",

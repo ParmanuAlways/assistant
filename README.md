@@ -75,3 +75,9 @@ prompt-injection attack. See EVALUATION.md, Part 2.
 (`TASKSET=mail` for webmail, `REPEAT=n` for repeats). Scripts: `tests/run-eval.sh`, `run-improved.sh`,
 `run-mail.sh`, `run-teach.sh`, `run-agnostic.sh`; summary with `tests/summarize.py`. Results:
 [EVALUATION.md](EVALUATION.md).
+
+## Firefox
+
+`npm run build:firefox` builds the Firefox add-on (`extension/.output/firefox-mv2`, opens as a sidebar).
+`tests/firefox-setup.sh` starts real Firefox (Docker image), and `python3 tests/firefox_e2e.py` runs the
+end-to-end test (14 checks; add `--label`/`--task` to try other tasks). Results are in EVALUATION.md, Part 3.

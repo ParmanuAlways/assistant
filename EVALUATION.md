@@ -173,3 +173,31 @@ parsing (code fences, `<think>`, nested or renamed keys), a per-model context bu
   actions, as a real person reading the confirmation would. Earlier runs used an always-yes user, which is
   why duplicate sends appeared there.
 - Several runs were repeated after fixes. Superseded results are kept in `eval-results-archive/`.
+
+---
+
+# Part 3 — Firefox
+
+Mozilla's download sites are blocked in the test environment, so Firefox came from the
+**selenium/standalone-firefox** image on Docker Hub (Firefox 158 + geckodriver 0.37). The Firefox build of the
+extension (`npm run build:firefox`, Manifest V2 with a sidebar) was installed as a temporary add-on and driven
+with Selenium (`tests/firefox-setup.sh`, `tests/firefox_e2e.py`).
+
+| Check | Stand-in model | Gemma 4 E4B |
+|---|---|---|
+| Extension installs and loads in Firefox | ✅ | ✅ |
+| Keycloak sign-in via Firefox's `identity.launchWebAuthFlow` | ✅ | ✅ |
+| Profile from directory; Settings test connection + capability detection | ✅ | ✅ |
+| Leave task end to end (question, confirmation, saved correctly) | ✅ 16 s | ✅ 8 min, all 7 fields correct |
+| History timeline with screenshots | ✅ | ✅ |
+| Teach-mode recorder | ✅ | ✅ |
+| Sign-out; auditor dashboard and integrity check | ✅ | ✅ |
+| **Total** | **14/14** | **14/14** |
+
+Firefox-specific notes:
+- Keycloak needs Firefox's redirect URI as well: `https://<sha1 of the add-on id>.extensions.allizom.org/*`.
+  `infra/setup_keycloak.py` now registers both the Chrome and the Firefox addresses.
+- For production, sign the add-on (self-distributed / enterprise) and deploy it with Firefox enterprise policies
+  (`policies.json` → `ExtensionSettings`), then open it from the toolbar as a sidebar.
+- In tests, WebDriver may not navigate to `moz-extension://` pages, so the test opens them from the browser
+  window, as a user would, with geckodriver's `--allow-system-access`.
