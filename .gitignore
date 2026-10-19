@@ -26,3 +26,4 @@ test-results/.chrome-profile/
 **/.profile/
 **/.chrome-profile/
 eval-results-*.log
+*.bundle
