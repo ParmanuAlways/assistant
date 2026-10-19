@@ -1,0 +1,23 @@
+{
+  "name": "office-assistant",
+  "version": "0.1.0",
+  "description": "Offline AI browser assistant for intranet sites",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "postinstall": "wxt prepare",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "5.9",
+    "wxt": "^0.20.27"
+  },
+  "private": true,
+  "type": "module"
+}

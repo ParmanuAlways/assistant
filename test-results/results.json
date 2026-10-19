@@ -1,0 +1,197 @@
+[
+  {
+    "name": "Extension loads in Chrome with the fixed ID",
+    "ok": true,
+    "detail": "abkbnfmigkhijkaakbjmdnddinokicop"
+  },
+  {
+    "name": "Keycloak sign-in in the extension shows the user",
+    "ok": true,
+    "detail": "Hello, Ravi Kumar (EMP1042)"
+  },
+  {
+    "name": "Normal user does not see the Audit button",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Profile filled automatically from company directory",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "No emergency contact known yet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Settings shows the active model",
+    "ok": true,
+    "detail": "Test stand-in model (rule-based, not AI) · stand-in-v1 @ http://llm.office.local:9100/v1"
+  },
+  {
+    "name": "Custom endpoint option hidden while admin policy forbids it",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Test connection to the model works",
+    "ok": true,
+    "detail": "✅ Connected (65 ms) · structured output: JSON schema · system role: yes"
+  },
+  {
+    "name": "Server rejects a custom endpoint when policy forbids it",
+    "ok": true,
+    "detail": "Your administrator has not allowed custom model endpoints."
+  },
+  {
+    "name": "Normal user cannot change admin policy",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Normal user cannot use auditor endpoints",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Task 1 completed",
+    "ok": true,
+    "detail": "ess.Leave request LR-1001 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
+  },
+  {
+    "name": "Assistant asked for the missing emergency contact (and nothing else it already knew)",
+    "ok": true,
+    "detail": "[\"What is your emergency contact number (10 digits)? I'll remember it for next time.\"]"
+  },
+  {
+    "name": "Asked for confirmation exactly once (only for the final submit, not for navigation)",
+    "ok": true,
+    "detail": "1 confirmation(s)"
+  },
+  {
+    "name": "Confirmation showed the filled form before submit",
+    "ok": true,
+    "detail": "Employee IDEMP1042Leave TypeCasual LeaveFrom Date2026-10-19To Date2026-10-21Reasonfamily functionEmergency Contact Number9123456780Reporting ManagerPriya Sharma"
+  },
+  {
+    "name": "Leave really saved in the portal with correct details",
+    "ok": true,
+    "detail": "{\"id\":1,\"ref\":\"LR-1001\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Casual Leave\",\"from_date\":\"2026-10-19\",\"to_date\":\"2026-10-21\",\"days\":3,\"reason\":\"family function\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-19 09:53:33\"}"
+  },
+  {
+    "name": "Panel shows the leave reference to the user",
+    "ok": true,
+    "detail": "LR-1001"
+  },
+  {
+    "name": "Answer was learned into the profile",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Task 2 completed without asking any question",
+    "ok": true,
+    "detail": "[]"
+  },
+  {
+    "name": "Task 2 saved correctly",
+    "ok": true,
+    "detail": "{\"id\":2,\"ref\":\"LR-1002\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Sick Leave\",\"from_date\":\"2026-11-02\",\"to_date\":\"2026-11-02\",\"days\":1,\"reason\":\"medical checkup\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-19 09:53:47\"}"
+  },
+  {
+    "name": "Declining the confirmation stops the task and submits nothing",
+    "ok": true,
+    "detail": "cancelled"
+  },
+  {
+    "name": "History tab lists the user's tasks",
+    "ok": true,
+    "detail": "3 tasks"
+  },
+  {
+    "name": "Timeline records request, pages, model decisions, results, answer, confirmation, screenshots",
+    "ok": true,
+    "detail": "user_message, page_snapshot, model_action, action_result, user_answer, profile_learned, screenshot, confirmation, task_finished"
+  },
+  {
+    "name": "Screenshots load in the timeline",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Sign-out clears the token",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Admin can allow custom model endpoints",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Custom endpoint option visible once allowed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Endpoint outside the allowed hosts is rejected",
+    "ok": true,
+    "detail": "❌ evil.example.com is not an allowed model host (allowed: *.office.local, 127.0.0.1, localhost, 10.0.0.0/8)."
+  },
+  {
+    "name": "Custom endpoint test connection",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Custom endpoint saved and active",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "When the chosen model is down, it falls back to the default and logs it",
+    "ok": true,
+    "detail": "{\"error\": \"[Errno 111] Connection refused\", \"fallback\": \"stand-in-v1\", \"model\": \"stand-in-v1\", \"url\": \"http://llm.office.local:9999/v1\"}"
+  },
+  {
+    "name": "Every settings change is in the audit log",
+    "ok": true,
+    "detail": "3 settings_changed events"
+  },
+  {
+    "name": "No password ever reaches the audit log",
+    "ok": true,
+    "detail": "0 hits"
+  },
+  {
+    "name": "Audit table refuses UPDATE/DELETE",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Auditor sees the Audit button",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Auditor's own History shows only her tasks",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Auditor dashboard lists everyone's tasks",
+    "ok": true,
+    "detail": "4 tasks"
+  },
+  {
+    "name": "Integrity check passes on the untouched log",
+    "ok": true,
+    "detail": "✔ Chain valid — 125 events checked"
+  },
+  {
+    "name": "Integrity check detects a tampered record",
+    "ok": true,
+    "detail": "✖ TAMPERING DETECTED at event #26 (user_answer, task 86eec2b3-192a-4819-80ac-d04f80ab8cb8, step 25) after 25 valid events"
+  }
+]

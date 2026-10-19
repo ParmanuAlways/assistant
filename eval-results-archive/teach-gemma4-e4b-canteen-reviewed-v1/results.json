@@ -1,0 +1,127 @@
+{
+  "label": "teach-gemma4-e4b-canteen-reviewed",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "canteen#1",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/4",
+      "field_ratio": 0,
+      "fields": {
+        "items": {
+          "got": null,
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]"
+        },
+        "slot": {
+          "got": null,
+          "want": "Lunch"
+        },
+        "mode": {
+          "got": null,
+          "want": "Desk"
+        },
+        "desk": {
+          "got": null,
+          "want": "B3-114"
+        }
+      },
+      "seconds": 290,
+      "steps": 9,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "d one Veg Thali and one Masala Chai, and selected 'LõClick element [19]The goal is to order one veg thali and one masala chai for lunch, delivered to my desk. I have already added both items (Veg Thali and Masala Chai) and selectedType \"\" into [20]Stopped: the assistant kept repeating the same step."
+    },
+    {
+      "task": "canteen#2",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/4",
+      "field_ratio": 0,
+      "fields": {
+        "items": {
+          "got": null,
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]"
+        },
+        "slot": {
+          "got": null,
+          "want": "Lunch"
+        },
+        "mode": {
+          "got": null,
+          "want": "Desk"
+        },
+        "desk": {
+          "got": null,
+          "want": "B3-114"
+        }
+      },
+      "seconds": 290,
+      "steps": 8,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "d both items and selected 'Lunch' (step 9 and 10). I'Click element [19]The goal is to order one veg thali and one masala chai for lunch, delivered to my desk. I have already selected 'Lunch' and 'Deliver to my desk'. I have also 'VType \"\" into [20]Stopped: the assistant kept repeating the same step."
+    },
+    {
+      "task": "canteen#3",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/4",
+      "field_ratio": 0,
+      "fields": {
+        "items": {
+          "got": null,
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]"
+        },
+        "slot": {
+          "got": null,
+          "want": "Lunch"
+        },
+        "mode": {
+          "got": null,
+          "want": "Desk"
+        },
+        "desk": {
+          "got": null,
+          "want": "B3-114"
+        }
+      },
+      "seconds": 284,
+      "steps": 8,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "d both items and selected 'Lunch' (step 9 and 10). I'Click element [19]The goal is to order one veg thali and one masala chai for lunch, delivered to my desk. I have already added both items (Veg Thali and Masala Chai) and selectedType \"\" into [20]Stopped: the assistant kept repeating the same step."
+    }
+  ]
+}

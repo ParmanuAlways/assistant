@@ -1,0 +1,97 @@
+{
+  "label": "gemma4-e4b+fixes-visitors",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "visitors",
+      "site": "Visitor pass (time input, radio group)",
+      "goal": "Register a visitor: Mr. Anil Gupta from Infosys is coming tomorrow at 11 am for a business meeting with me. His mobile is 9988776655.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/8",
+      "field_ratio": 0,
+      "fields": {
+        "visitor_name": {
+          "got": null,
+          "want": "Anil Gupta"
+        },
+        "company": {
+          "got": null,
+          "want": "Infosys"
+        },
+        "phone": {
+          "got": null,
+          "want": "9988776655"
+        },
+        "visit_date": {
+          "got": null,
+          "want": "2026-10-19"
+        },
+        "arrival_time": {
+          "got": null,
+          "want": "11:00"
+        },
+        "purpose": {
+          "got": null,
+          "want": "Business Meeting"
+        },
+        "host_emp_id": {
+          "got": null,
+          "want": "EMP1042"
+        },
+        "id_proof": {
+          "got": null,
+          "want": "Aadhaar"
+        }
+      },
+      "seconds": 964,
+      "steps": 25,
+      "questions": [
+        "What should I enter for 'Visit date'?",
+        "What should I enter for 'Arrival time'?",
+        "What should I enter for 'Arrival time'?",
+        "What should I enter for 'Arrival time'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?",
+        "What should I enter for 'Host employee ID'?"
+      ],
+      "answers": [
+        "I am not sure, please use your best judgement.",
+        "I am not sure, please use your best judgement.",
+        "I am not sure, please use your best judgement.",
+        "I am not sure, please use your best judgement.",
+        "EMP1042",
+        "EMP1042",
+        "EMP1042",
+        "EMP1042",
+        "EMP1042",
+        "EMP1042",
+        "EMP1042",
+        "EMP1042",
+        "EMP1042",
+        "EMP1042",
+        "EMP1042"
+      ],
+      "unnecessary_questions": 4,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "1042A required field is still empty.EMP1042A required field is still empty.EMP1042A required field is still empty.EMP1042A required field is still empty.EMP1042A required field is still empty.EMP1042A required field is still empty.EMP1042A required field is still empty.EMP1042Stopped after 25 steps."
+    }
+  ]
+}

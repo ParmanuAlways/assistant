@@ -1,0 +1,30 @@
+{
+  "label": "qwen3.5-4b-helpdesk",
+  "demo": "helpdesk",
+  "recorded": [
+    "Opened \"Intranet – intranet\" (http://intranet.office.local:8300/)",
+    "Clicked link \"IT Service Desk\"",
+    "Opened \"Sign in – IT Service Desk\" (http://helpdesk.office.local:8300/)",
+    "Clicked link \"Sign in with company account\"",
+    "Opened \"Home – IT Service Desk\" (http://helpdesk.office.local:8300/)",
+    "Clicked link \"Raise a Ticket\"",
+    "Opened \"New Ticket – IT Service Desk\" (http://helpdesk.office.local:8300/tickets/new)",
+    "Chose \"Software\" for \"Category\"",
+    "Chose \"Low\" for \"Priority\"",
+    "Typed \"Outlook keeps crashing\" into \"Subject\"",
+    "Typed \"Outlook closes by itself when I open the calendar.\" into \"Describe the problem\"",
+    "Typed \"LT-9999\" into \"Asset Tag\"",
+    "Clicked button \"Raise Ticket\"",
+    "Opened \"Done – IT Service Desk\" (http://helpdesk.office.local:8300/tickets/new)"
+  ],
+  "draft": "Start URL: http://intranet.office.local:8300/\n1. Click the link 'IT Service Desk'.\n2. Click the link 'Sign in with company account'.\n3. Click the link 'Raise a Ticket'.\n4. Select 'Software' from the 'Category' dropdown.\n5. Select 'Low' from the 'Priority' dropdown.\n6. Type <subject from the request> into the 'Subject' field.\n7. Type <description from the request> into the 'Describe the problem' field.\n8. Type <asset tag from the request> into the 'Asset Tag' field.\n9. Click the button 'Raise Ticket'.\n10. Wait for the confirmation page to appear.",
+  "quality": {
+    "has_start_url": true,
+    "steps": 10,
+    "copied_demo_values": [
+      "Software"
+    ]
+  },
+  "saved_status": "✅ Saved — waiting for an admin to approve it.",
+  "approved": true
+}

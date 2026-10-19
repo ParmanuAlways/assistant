@@ -1,0 +1,139 @@
+{
+  "label": "teach-gemma4-e4b-canteen-after",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "canteen#1",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": false,
+      "field_score": "3/4",
+      "field_ratio": 0.75,
+      "fields": {
+        "items": {
+          "got": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "ok": true
+        },
+        "slot": {
+          "got": "Lunch",
+          "want": "Lunch",
+          "ok": true
+        },
+        "mode": {
+          "got": "Desk",
+          "want": "Desk",
+          "ok": true
+        },
+        "desk": {
+          "got": "EMP1042",
+          "want": "B3-114",
+          "ok": false
+        }
+      },
+      "seconds": 339,
+      "steps": 11,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 1,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "ck element [22]The goal was to order one veg thali and one masala chai for lunch, delivered to the desk. All steps have been completed, and the current page confirms the orderSuccessfully ordered one veg thali and one masala chai for lunch, delivered to desk EMP1042. The order reference is ORD-2002."
+    },
+    {
+      "task": "canteen#2",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": false,
+      "field_score": "3/4",
+      "field_ratio": 0.75,
+      "fields": {
+        "items": {
+          "got": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "ok": true
+        },
+        "slot": {
+          "got": "Lunch",
+          "want": "Lunch",
+          "ok": true
+        },
+        "mode": {
+          "got": "Desk",
+          "want": "Desk",
+          "ok": true
+        },
+        "desk": {
+          "got": "EMP1042",
+          "want": "B3-114",
+          "ok": false
+        }
+      },
+      "seconds": 325,
+      "steps": 10,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 1,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "ck element [22]The goal was to order one veg thali and one masala chai for lunch, delivered to the desk. All steps have been completed, and the current page confirms the orderSuccessfully ordered one veg thali and one masala chai for lunch, delivered to desk EMP1042. The order reference is ORD-2003."
+    },
+    {
+      "task": "canteen#3",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": false,
+      "field_score": "3/4",
+      "field_ratio": 0.75,
+      "fields": {
+        "items": {
+          "got": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "ok": true
+        },
+        "slot": {
+          "got": "Lunch",
+          "want": "Lunch",
+          "ok": true
+        },
+        "mode": {
+          "got": "Desk",
+          "want": "Desk",
+          "ok": true
+        },
+        "desk": {
+          "got": "EMP1042",
+          "want": "B3-114",
+          "ok": false
+        }
+      },
+      "seconds": 319,
+      "steps": 10,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 1,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "ck element [22]The goal was to order one veg thali and one masala chai for lunch, delivered to the desk. All steps have been completed, and the current page confirms the orderSuccessfully ordered one veg thali and one masala chai for lunch, delivered to desk EMP1042. The order reference is ORD-2004."
+    }
+  ]
+}

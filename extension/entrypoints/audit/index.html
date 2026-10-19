@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Audit Dashboard</title>
+    <link rel="stylesheet" href="../sidepanel/style.css" />
+    <style>
+      body { max-width: 1100px; margin: 0 auto; }
+      .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+      .filters > * { flex: 1; min-width: 140px; }
+      #tasks tr { cursor: pointer; }
+      #tasks tr:hover td { background: var(--soft); }
+      .verify-ok { color: var(--ok); font-weight: 600; } .verify-bad { color: var(--err); font-weight: 600; }
+      .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      @media (max-width: 800px) { .cols { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <section>
+      <header><h1>Audit Dashboard</h1><span id="who" class="muted"></span></header>
+      <p id="denied" class="error" hidden></p>
+      <div id="main" hidden>
+        <div class="row">
+          <button id="verify-btn" class="primary">Verify integrity</button>
+          <span id="verify-result"></span>
+          <button id="export-btn">Export CSV</button>
+        </div>
+        <div class="filters">
+          <label>Employee ID <input id="f-emp" placeholder="EMP1042" /></label>
+          <label>Status <select id="f-status"><option value="">Any</option><option>completed</option><option>failed</option><option>cancelled</option><option>running</option></select></label>
+          <label>Site <input id="f-site" placeholder="hr.office.local" /></label>
+          <button id="f-apply">Filter</button>
+        </div>
+        <div class="cols">
+          <div>
+            <h2>Tasks</h2>
+            <table id="tasks"></table>
+          </div>
+          <div>
+            <div id="detail"><p class="muted">Select a task to see every step.</p></div>
+          </div>
+        </div>
+        <h2>Account &amp; settings activity</h2>
+        <table id="activity"></table>
+      </div>
+    </section>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

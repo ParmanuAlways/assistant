@@ -1,0 +1,32 @@
+{
+  "label": "gemma4-e4b-canteen",
+  "demo": "canteen",
+  "recorded": [
+    "Opened \"Intranet – intranet\" (http://intranet.office.local:8300/)",
+    "Clicked link \"Canteen Orders\"",
+    "Opened \"Sign in – Canteen Orders\" (http://canteen.office.local:8300/)",
+    "Clicked link \"Sign in with company account\"",
+    "Opened \"Home – Canteen Orders\" (http://canteen.office.local:8300/)",
+    "Clicked link \"Order Food\"",
+    "Opened \"Order Food – Canteen Orders\" (http://canteen.office.local:8300/order)",
+    "Clicked button \"Add one Masala Dosa\"",
+    "Clicked button \"Add one Filter Coffee\"",
+    "Clicked button \"Snacks\"",
+    "Clicked button \"Deliver to my desk\"",
+    "Typed \"A1-001\" into \"Desk number\"",
+    "Clicked button \"Place Order\"",
+    "Clicked button \"Yes, place order\""
+  ],
+  "draft": "Start URL: http://intranet.office.local:8300/\n1. Click link \"Canteen Orders\"\n2. Click link \"Sign in with company account\"\n3. Click link \"Order Food\"\n4. Click button \"Add one Masala Dosa\"\n5. Click button \"Add one Filter Coffee\"\n6. Click button \"Snacks\"\n7. Click button \"Deliver to my desk\"\n8. Type <desk number> into field \"Desk number\"\n9. Click button \"Place Order\"\n10. Click button \"Yes, place order\"",
+  "quality": {
+    "has_start_url": true,
+    "steps": 10,
+    "copied_demo_values": [
+      "Masala Dosa",
+      "Filter Coffee",
+      "Snacks"
+    ]
+  },
+  "saved_status": "✅ Saved — waiting for an admin to approve it.",
+  "approved": true
+}

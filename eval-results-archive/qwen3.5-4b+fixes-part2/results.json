@@ -1,0 +1,176 @@
+{
+  "label": "qwen3.5-4b+fixes-part2",
+  "model": {
+    "name": "qwen3.5-4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "qwen3.5-4b"
+  },
+  "results": [
+    {
+      "task": "rooms",
+      "site": "Room booking (search → results → book)",
+      "goal": "Book a meeting room for 6 people on 21 Oct 2026 from 3 pm to 4 pm for Sprint planning.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "6/6",
+      "field_ratio": 1,
+      "fields": {
+        "date": {
+          "got": "2026-10-21",
+          "want": "2026-10-21",
+          "ok": true
+        },
+        "start": {
+          "got": "15:00",
+          "want": "15:00",
+          "ok": true
+        },
+        "end": {
+          "got": "16:00",
+          "want": "16:00",
+          "ok": true
+        },
+        "people": {
+          "got": "6",
+          "want": "6",
+          "ok": true
+        },
+        "room": {
+          "got": "Tulip",
+          "want": [
+            "Tulip",
+            "Orchid"
+          ],
+          "ok": true
+        },
+        "title": {
+          "got": "Sprint planning",
+          "want": "sprint",
+          "ok": true
+        }
+      },
+      "seconds": 285,
+      "steps": 13,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "k element [5]The booking confirmation page shows the meeting is successfully booked with all the required details matching the goal. The reference number BKG-2001 is visibleMeeting room booked successfully for 6 people on 2026-10-21 from 15:00 to 16:00 for Sprint planning. Reference number: BKG-2001"
+    },
+    {
+      "task": "visitors",
+      "site": "Visitor pass (time input, radio group)",
+      "goal": "Register a visitor: Mr. Anil Gupta from Infosys is coming tomorrow at 11 am for a business meeting with me. His mobile is 9988776655.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "8/8",
+      "field_ratio": 1,
+      "fields": {
+        "visitor_name": {
+          "got": "Mr. Anil Gupta",
+          "want": "Anil Gupta",
+          "ok": true
+        },
+        "company": {
+          "got": "Infosys",
+          "want": "Infosys",
+          "ok": true
+        },
+        "phone": {
+          "got": "9988776655",
+          "want": "9988776655",
+          "ok": true
+        },
+        "visit_date": {
+          "got": "2026-10-19",
+          "want": "2026-10-19",
+          "ok": true
+        },
+        "arrival_time": {
+          "got": "11:00",
+          "want": "11:00",
+          "ok": true
+        },
+        "purpose": {
+          "got": "Business Meeting",
+          "want": "Business Meeting",
+          "ok": true
+        },
+        "host_emp_id": {
+          "got": "EMP1042",
+          "want": "EMP1042",
+          "ok": true
+        },
+        "id_proof": {
+          "got": "Aadhaar",
+          "want": "Aadhaar",
+          "ok": true
+        }
+      },
+      "seconds": 357,
+      "steps": 15,
+      "questions": [
+        "Which ID proof will Mr. Anil Gupta carry?"
+      ],
+      "answers": [
+        "Aadhaar"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "s steps. Clicking the submit button will register the visitor.Confirmed: Register VisitorClick element [14]The visitor pass has been created as confirmed by the page text. The goal is achieved.Visitor registration for Mr. Anil Gupta from Infosys was successfully completed. Reference number: VIS-2002"
+    },
+    {
+      "task": "canteen",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": false,
+      "field_score": "3/4",
+      "field_ratio": 0.75,
+      "fields": {
+        "items": {
+          "got": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "ok": true
+        },
+        "slot": {
+          "got": "Lunch",
+          "want": "Lunch",
+          "ok": true
+        },
+        "mode": {
+          "got": "Desk",
+          "want": "Desk",
+          "ok": true
+        },
+        "desk": {
+          "got": "EMP1042",
+          "want": "B3-114",
+          "ok": false
+        }
+      },
+      "seconds": 303,
+      "steps": 12,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 2,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "22]The page confirms the order was placed with reference number ORD-2003. Both items (veg thali and masala chai) were ordered for lunch delivery to the user's deskSuccessfully ordered one veg thali and one masala chai for lunch, delivered to desk EMP1042. Order placed with reference number ORD-2003."
+    }
+  ]
+}

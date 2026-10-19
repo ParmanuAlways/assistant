@@ -1,0 +1,28 @@
+# Secrets: the extension signing key and backend encryption key must never be committed
+infra/keys/extension-key.pem
+backend/secret.key
+
+# Downloaded third-party software (re-download with the instructions in README.md)
+infra/keycloak-*/
+mail/roundcubemail-*/
+
+# Dependencies and builds
+node_modules/
+extension/.output/
+extension/.wxt/
+
+# Runtime data, logs, caches
+*.db
+*.db-shm
+*.db-wal
+!eval-results/**/agent.db
+backend/screenshots/
+infra/logs/
+infra/keycloak.log
+mail/logs/
+mail/temp/
+__pycache__/
+test-results/.chrome-profile/
+**/.profile/
+**/.chrome-profile/
+eval-results-*.log

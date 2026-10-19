@@ -1,0 +1,143 @@
+{
+  "label": "teach-gemma4-e4b-canteen-reviewed",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "canteen#1",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "4/4",
+      "field_ratio": 1,
+      "fields": {
+        "items": {
+          "got": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "ok": true
+        },
+        "slot": {
+          "got": "Lunch",
+          "want": "Lunch",
+          "ok": true
+        },
+        "mode": {
+          "got": "Desk",
+          "want": "Desk",
+          "ok": true
+        },
+        "desk": {
+          "got": "B3-114",
+          "want": "B3-114",
+          "ok": true
+        }
+      },
+      "seconds": 433,
+      "steps": 12,
+      "questions": [
+        "What should I enter for 'Desk number'?"
+      ],
+      "answers": [
+        "B3-114"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "goal was to order one veg thali and one masala chai for lunch, delivered to the desk. The previous steps show that one masala chai was added (Step 2), and aOrdered one veg thali and one masala chai for lunch, delivered to desk B3-114. The order was successfully placed with reference number ORD-2001."
+    },
+    {
+      "task": "canteen#2",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "4/4",
+      "field_ratio": 1,
+      "fields": {
+        "items": {
+          "got": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "ok": true
+        },
+        "slot": {
+          "got": "Lunch",
+          "want": "Lunch",
+          "ok": true
+        },
+        "mode": {
+          "got": "Desk",
+          "want": "Desk",
+          "ok": true
+        },
+        "desk": {
+          "got": "B3-114",
+          "want": "B3-114",
+          "ok": true
+        }
+      },
+      "seconds": 333,
+      "steps": 10,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 1,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": " was to order one veg thali and one masala chai for lunch, delivered to the desk. The current page shows 'Order placed. Reference: ORD-2002', indicatingThe order for one veg thali and one masala chai for lunch, delivered to desk B3-114, has been successfully placed. The reference number is ORD-2002."
+    },
+    {
+      "task": "canteen#3",
+      "site": "Canteen (JavaScript app, toggles, modal)",
+      "goal": "Order one veg thali and one masala chai for lunch, delivered to my desk.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "4/4",
+      "field_ratio": 1,
+      "fields": {
+        "items": {
+          "got": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "want": "[[\"Masala Chai\",1],[\"Veg Thali\",1]]",
+          "ok": true
+        },
+        "slot": {
+          "got": "Lunch",
+          "want": "Lunch",
+          "ok": true
+        },
+        "mode": {
+          "got": "Desk",
+          "want": "Desk",
+          "ok": true
+        },
+        "desk": {
+          "got": "B3-114",
+          "want": "B3-114",
+          "ok": true
+        }
+      },
+      "seconds": 318,
+      "steps": 10,
+      "questions": [],
+      "answers": [],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 1,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "summary": "der one veg thali and one masala chai for lunch, delivered to the desk. All steps have been completed, and the current page confirms 'Order PlSuccessfully ordered one veg thali and one masala chai for lunch, delivered to desk B3-114. The order was placed and confirmed with reference number ORD-2003."
+    }
+  ]
+}

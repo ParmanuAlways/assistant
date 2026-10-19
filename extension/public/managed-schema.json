@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "apiUrl": { "type": "string", "description": "Office Assistant backend, e.g. http://ai.office.local:8000" },
+    "keycloakUrl": { "type": "string", "description": "Keycloak realm URL, e.g. http://keycloak.office.local:8080/realms/company" },
+    "clientId": { "type": "string", "description": "Keycloak client ID (default browser-agent)" }
+  }
+}
