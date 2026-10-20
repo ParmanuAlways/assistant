@@ -102,6 +102,15 @@ try {
   await sleep(800);
   check('Asking in the chat answers from the communications', (await panel.$$('.comm-results-bubble .comm')).length > 0);
   grab('07-chat-search');
+  // not in the index (it is in the webmail): the assistant goes and does it in the browser instead
+  const bubbles = (await panel.$$('.comm-results-bubble')).length;
+  await panel.fill('#prompt', 'Find the email from IT about the VPN maintenance and tell me when it starts.');
+  await panel.click('#run-btn');
+  await panel.waitForFunction(() => document.body.dataset.agent === 'running' || document.querySelectorAll('.comm-results-bubble').length > 1,
+    null, { timeout: 20000 }).catch(() => {});
+  check('Not in the communications: the assistant does it in the browser', (await panel.$$('.comm-results-bubble')).length === bubbles &&
+    (await panel.evaluate(() => document.body.dataset.agent)) === 'running');
+  await panel.click('#stop-btn').catch(() => {});
   console.log(`${checks.filter(Boolean).length}/${checks.length} checks passed; shots in ${OUT}`);
 } finally {
   await ctx.close();

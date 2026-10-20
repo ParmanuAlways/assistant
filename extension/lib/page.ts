@@ -439,9 +439,20 @@ async function actInPage(action: PageAction): Promise<ActionResult> {
       if (input.type !== 'date' && value.length >= 2) {
         await sleep(600);
         const first = value.toLowerCase().split(' ')[0];
-        suggestions = Array.from(document.querySelectorAll<HTMLElement>('body *'))
-          .filter((e) => !shown.has(e) && visible(e) && e.children.length === 0 && clean(e.innerText).toLowerCase().includes(first))
-          .map((e) => clean(e.innerText)).slice(0, 5);
+        const found = Array.from(document.querySelectorAll<HTMLElement>('body *'))
+          .filter((e) => !shown.has(e) && visible(e) && e.children.length === 0 && clean(e.innerText).toLowerCase().includes(first));
+        // Exactly one suggestion with everything that was typed ("Priya Sharma" -> "Priya Sharma (Engineering)"): pick it,
+        // as a person would. Models often forget, and the site then refuses the form.
+        const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const whole = found.filter((e) => norm(clean(e.innerText)).includes(norm(value)));
+        if (whole.length === 1 && clean(whole[0].innerText) !== value) {
+          const pick = clean(whole[0].innerText);
+          whole[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+          whole[0].click();
+          await sleep(300);
+          return { ok: true, detail: `typed "${value}" and picked the suggestion "${pick}"` };
+        }
+        suggestions = found.map((e) => clean(e.innerText)).slice(0, 5);
       }
       const hint = suggestions.length ? `; suggestions appeared: ${suggestions.map((x) => `"${x}"`).join(', ')} — click the right one (or use autocomplete)` : '';
       if (input.value === value) return { ok: true, detail: `typed "${input.value}"${hint}` };
@@ -603,18 +614,19 @@ function workingInPage(text: string | null) {
   if (!host) {
     host = document.createElement('div');
     host.id = '__oa_working';
+    // No animation: an animated full-page glow repaints the whole page every frame, which on PCs without a graphics
+    // card keeps a CPU core busy for the whole task (and slowed a model on the same machine to a crawl). The pill's
+    // text changes with each step, which is enough to show it is working.
     host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483646';
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>
-      .glow{position:fixed;inset:0;border-radius:6px;box-shadow:inset 0 0 0 2px rgba(124,58,237,.55),inset 0 0 28px rgba(124,58,237,.35);
-        animation:b 2.4s ease-in-out infinite}
-      @keyframes b{50%{box-shadow:inset 0 0 0 2px rgba(99,102,241,.35),inset 0 0 16px rgba(168,85,247,.2)}}
+      .glow{position:fixed;inset:0;border-radius:6px;box-shadow:inset 0 0 0 2px rgba(124,58,237,.55),inset 0 0 28px rgba(124,58,237,.35)}
       .pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;max-width:70vw;
         padding:8px 14px 8px 8px;border-radius:999px;background:rgba(22,24,36,.92);color:#fff;font:500 13px/1.3 Inter,system-ui,sans-serif;
         box-shadow:0 8px 30px rgba(0,0,0,.25)}
       .m{width:22px;height:22px;border-radius:7px;background:conic-gradient(from 200deg,#6366f1,#a855f7,#ec4899,#6366f1);display:grid;
-        place-items:center;font-size:12px;flex:none;animation:h 2.4s linear infinite}
-      @keyframes h{to{filter:hue-rotate(360deg)}}
+        place-items:center;font-size:12px;flex:none}
+
       .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.n{opacity:.6;margin-right:4px}</style>
       <div class="glow"></div><div class="pill"><span class="m">✦</span><span class="t"><span class="n">Office Assistant</span><span id="s"></span></span></div>`;
     (document.body || document.documentElement).appendChild(host);

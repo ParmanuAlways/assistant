@@ -81,7 +81,8 @@ const DEMOS = {
   },
 };
 
-const ctx = await chromium.launchPersistentContext(`${OUT}/.profile`, {
+const PROFILE = process.env.PROFILE_DIR || `${OUT}/.profile`;   // PROFILE_DIR: the same browser the tasks will run in
+const ctx = await chromium.launchPersistentContext(PROFILE, {
   headless: false, executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`], viewport: { width: 1100, height: 900 },
 });
@@ -137,6 +138,10 @@ try {
   // 2. It is active straight away (there is no server where an admin would approve it)
   await panel.waitForSelector('#playbook-list .task');
   result.active = (await panel.textContent('#playbook-list')).includes('active');
+  // what an admin would copy into the browser policy to share it with everyone (playbooks: [...])
+  const taught = (await panel.evaluate(() => window.__officeAssistantDebug.store.all('playbooks'))).filter((p) => p.source === 'teach');
+  fs.writeFileSync(path.join(OUT, 'playbook-policy.json'), JSON.stringify(taught.map((p) => ({ site: p.site, task: p.task, steps: p.steps,
+    macro: p.macro ? JSON.parse(p.macro) : undefined })), null, 2));
   await panel.screenshot({ path: path.join(OUT, '4-active.png'), fullPage: true });
   console.log('RECORDED:\n  ' + result.recorded.join('\n  '));
   console.log('DRAFT PLAYBOOK:\n' + result.draft);
@@ -147,5 +152,5 @@ try {
 } finally {
   fs.writeFileSync(path.join(OUT, 'teach.json'), JSON.stringify(result, null, 2));
   await ctx.close();
-  fs.rmSync(`${OUT}/.profile`, { recursive: true, force: true });
+  if (!process.env.PROFILE_DIR) fs.rmSync(PROFILE, { recursive: true, force: true });
 }

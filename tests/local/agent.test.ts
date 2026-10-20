@@ -133,6 +133,13 @@ skills.advance(st4, { action: 'pick_date', id: 9 }, { tag: 'img', type: 'clickab
 check('workflow: a field reached through its icon counts as done', st4.cursor === 1, st4);
 check('workflow: similarity', skills.similarity('raise a travel request to Mumbai for training', 'raise a travel request to Pune for a client visit') >= 0.6);
 
+// a colleague's e-mail from the directory is not the user's own detail
+const pv = agent.provenance([{ label: 'To', value: 'priya@office.local,' }], 'Email Priya that I am on leave',
+  { email: 'ravi@office.local', colleagues_from_company_directory: [{ name: 'Priya Sharma', email: 'priya@office.local' }] }, [], ['priya@office.local'], T);
+check('provenance: a colleague from the directory is labelled so, and not flagged', pv[0].source === 'from the company directory' && !pv[0]._profile_key, pv);
+check('verifier: no "your profile" warning for a colleague\'s address',
+  !agent.verifySubmission('Email Priya that I am on leave', pv, T).some((x: string) => /your .* from your profile/.test(x)));
+
 // ---- a fake OpenAI-compatible model server
 const seen: any[] = [];
 let queue: any[] = [];
@@ -212,6 +219,30 @@ const { task_id: t4 } = await api('/api/tasks', 'POST', { prompt: 'Apply casual 
 queue = [{ action: 'click', id: 99, thought: 'x' }, { action: 'type', id: 1, value: 'family function', thought: 'fix' }];
 r = await api(`/api/tasks/${t4}/step`, 'POST', { page: form });
 check('recovery: a missing element number is corrected once', r.action.action === 'type' && r.action.id === 1, r.action);
+
+// a required choice (radio buttons) the model keeps ignoring: the assistant asks, with the choices as buttons, then picks it
+const visitor = { url: 'http://visitors.office.local:8300/visitors/new', title: 'Register Visitor', text: 'Register Visitor',
+  elements: [{ id: 1, tag: 'input', type: 'text', label: 'Visitor full name', value: 'Anil Gupta', required: true },
+    { id: 2, tag: 'input', type: 'radio', label: 'Aadhaar', value: '', required: true, group: 'ID proof the visitor will carry' },
+    { id: 3, tag: 'input', type: 'radio', label: 'PAN card', value: '', group: 'ID proof the visitor will carry' },
+    { id: 4, tag: 'button', type: 'submit', text: 'Register Visitor' }] };
+const { task_id: t5 } = await api('/api/tasks', 'POST', { prompt: 'Register a visitor: Mr. Anil Gupta', url: visitor.url });
+queue = [{ action: 'click', id: 4, thought: 'submit' }, { action: 'click', id: 4, thought: 'submit' }];
+r = await api(`/api/tasks/${t5}/step`, 'POST', { page: visitor });
+check('required radio choice: asked, with the choices', r.action.action === 'ask_user' && /ID proof/.test(r.action.question)
+  && eq(r.action.options, ['Aadhaar', 'PAN card']), r.action);
+queue = [{ action: 'click', id: 4, thought: 'submit' }, { action: 'click', id: 4, thought: 'submit' }];
+r = await api(`/api/tasks/${t5}/step`, 'POST', { page: visitor, last_result: { ok: true }, user_answer: { field: r.action.field, question: r.action.question, answer: 'PAN card' } });
+check('required radio choice: the answer is clicked', r.action.action === 'click' && r.action.id === 3, r.action);
+
+// typing into a read-only box that its Lookup button fills: the button is pressed instead
+const purchase = { url: 'http://legacy.office.local:8500/purchase', title: 'Purchase Request', text: 'Purchase Request',
+  elements: [{ id: 13, tag: 'input', type: 'text', label: 'Cost centre', value: '', readonly: true, required: true },
+    { id: 14, tag: 'button', type: 'button', text: 'Lookup...' }, { id: 17, tag: 'button', type: 'submit', text: 'Create Request' }] };
+const { task_id: t6 } = await api('/api/tasks', 'POST', { prompt: 'Create a purchase request, cost centre Engineering - Bangalore', url: purchase.url });
+queue = [{ action: 'type', id: 13, value: 'Engineering - Bangalore', thought: 'fill' }];
+r = await api(`/api/tasks/${t6}/step`, 'POST', { page: purchase });
+check('read-only box with a Lookup button: the button is pressed', r.action.action === 'click' && r.action.id === 14, r.action);
 
 // cancelling
 await api(`/api/tasks/${t4}/events`, 'POST', { event_type: 'user_cancelled', payload: { reason: 'Stopped by user' } });

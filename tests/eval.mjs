@@ -132,7 +132,9 @@ if (REPEAT > 1) TASKS.splice(0, TASKS.length, ...TASKS.flatMap((t) => Array.from
 const HAS_MAIL = TASKS.some((t) => t.mail);
 if (HAS_MAIL) execFileSync('python3', [`${ROOT}/tests/mailbox.py`, 'reset']);
 
-const ctx = await chromium.launchPersistentContext(`${OUT}/.profile`, {
+// PROFILE_DIR: run in a browser used before (e.g. where a workflow was taught); else a fresh one
+const PROFILE = process.env.PROFILE_DIR || `${OUT}/.profile`;
+const ctx = await chromium.launchPersistentContext(PROFILE, {
   headless: false, executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`], viewport: { width: 1100, height: 900 },
 });
@@ -166,6 +168,11 @@ try {
     await portal.fill('#rcmloginpwd', 'ravi123');
     await portal.click('#rcmloginsubmit');
     await portal.waitForSelector('#messagelist', { timeout: 20000 });
+  }
+  if (process.env.SHARED_PLAYBOOKS) {   // playbooks an admin shares through policy (added to the usual ones)
+    const usual = (await panel.evaluate(() => window.__officeAssistantDebug.api('/api/playbooks'))).filter((p) => p.source === 'seed')
+      .sort((a, b) => a.id - b.id).map((p) => ({ site: p.site, task: p.task, steps: p.steps }));
+    DEV_CONFIG.playbooks = [...usual, ...JSON.parse(fs.readFileSync(process.env.SHARED_PLAYBOOKS, 'utf8'))];
   }
   await panel.evaluate((c) => chrome.storage.local.set({ devConfig: c }), DEV_CONFIG);
   model = (await panel.evaluate(() => window.__officeAssistantDebug.api('/api/settings'))).active;
@@ -319,6 +326,6 @@ try {
     fs.writeFileSync(path.join(OUT, 'audit-log.json'), JSON.stringify(dump));
   } catch (e) { console.error('could not save the audit log', e.message); }
   await ctx.close();
-  fs.rmSync(`${OUT}/.profile`, { recursive: true, force: true });
+  if (!process.env.PROFILE_DIR) fs.rmSync(PROFILE, { recursive: true, force: true });
   fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({ label: LABEL, model, results }, null, 2));
 }

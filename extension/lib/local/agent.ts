@@ -405,6 +405,19 @@ export function missingRequiredFields(page: Page): any[] {
     && !['submit', 'button', 'hidden', 'password', 'radio', 'checkbox'].includes(e.type));
 }
 
+/** Required radio groups with nothing chosen yet: [{group, options: [{id, label}]}] */
+export function missingRadioGroups(page: Page): { group: string; options: { id: number; label: string }[] }[] {
+  const groups = new Map<string, { id: number; label: string }[]>(), required = new Set<string>(), ok = new Set<string>();
+  for (const e of page.elements || []) {
+    if (e.type !== 'radio') continue;
+    const g = e.group || e.label;
+    groups.set(g, [...(groups.get(g) || []), { id: e.id, label: e.label || e.text || '' }]);
+    if (e.required) required.add(g);
+    if (e.value === 'checked') ok.add(g);
+  }
+  return [...required].filter((g) => !ok.has(g)).map((g) => ({ group: g, options: groups.get(g)! }));
+}
+
 /** Labels of required fields that are still empty (a radio group counts once). */
 export function missingRequired(page: Page): string[] {
   const missing: string[] = [], groupsOk = new Set<string>(), groups: string[] = [];
@@ -480,7 +493,7 @@ export function parseBox(text: string): [number, number] | null {
 
 /** Two narrow questions instead of one hard one: what to click (on the whole screen), then where it is (on a
  *  close-up of the drawing). Returns [click_xy action, target] or [null, reason]. */
-export async function locateInDrawing(cfg: Cfg, goal: string, screenshotB64: string, drawing: any, avoid = ''): Promise<[Act | null, string]> {
+export async function locateInDrawing(cfg: Cfg, goal: string, screenshotB64: string, drawing: any, avoid = '', zoom = 2): Promise<[Act | null, string]> {
   const img = (b: string) => ({ type: 'image_url', image_url: { url: `data:image/png;base64,${b.split(',').pop()}` } });
   const note = avoid ? ` It is not ${avoid}.` : '';
   const reply = await callModel(cfg, [{ role: 'user', content: [{ type: 'text', text: `${LOCATE_PROMPT}\n\nGOAL: ${goal}${note}` },
@@ -490,7 +503,7 @@ export async function locateInDrawing(cfg: Cfg, goal: string, screenshotB64: str
   if (!target) return [null, 'no target'];
   const r = drawing.rect;
   const out = await callModel(cfg, [{ role: 'user', content: [{ type: 'text', text: `Detect "${target}". Reply with its bounding box as JSON.` },
-    img(await cropPng(screenshotB64, r))] }], { json_mode: false, no_think: true });
+    img(await cropPng(screenshotB64, r, zoom))] }], { json_mode: false, no_think: true });
   const c = parseBox(out);
   if (!c) return [null, `could not find ${target}`];
   const x = Math.round(r.x + c[0] * r.w), y = Math.round(r.y + c[1] * r.h);
@@ -581,7 +594,11 @@ export function provenance(fields: any[], goal: string, profile: any, answers: s
     } else if (c.startsWith('date:') && goalDates.has(c.slice(5))) src = 'from your request';
     else if (c.startsWith('num:') && goalNums.includes(num(v))) src = 'from your request';
     else if (c.startsWith('txt:') && c.slice(4) && goalNorm.includes(c.slice(4))) src = 'from your request';
-    else if (prof.has(c)) {
+    else if (prof.has(c) && prof.get(c)!.startsWith('directory ')) {
+      // a colleague's details from the company directory (Priya's e-mail in "To"): not the user's own, so not checked
+      // against the field the way the user's own profile details are
+      src = 'from the company directory';
+    } else if (prof.has(c)) {
       src = `from your profile (${prof.get(c)!.replace(/_/g, ' ')})`;
       f = { ...f, _profile_key: prof.get(c) };
     } else if (answered.has(c)) src = 'you told me';

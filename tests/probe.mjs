@@ -82,6 +82,11 @@ console.log(await act({ action: 'select', id: find(s, (e) => e.label === 'Month'
 console.log(await act({ action: 'upload', id: find(s, (e) => e.type === 'file').id, file: { name: 'timesheet-sep-2026.pdf', type: 'application/pdf', data } }));
 console.log(await act({ action: 'click', id: find(s, (e) => e.text === 'Upload').id })); await sleep(1500);
 s = await snap(); console.log(s.notices, s.text.slice(-120));
+// typing a name (not the autocomplete action) where suggestions appear: the one matching suggestion is picked
+await act({ action: 'click', id: find(await snap(), (e) => e.text === 'Purchase Request').id }); await sleep(1000);
+s = await snap();
+const typed = await act({ action: 'type', id: find(s, (e) => e.label === 'Approver').id, value: 'Priya Sharma' });
+const typedPick = /picked the suggestion "Priya Sharma \(Engineering\)"/.test(typed.detail || '');
 console.log('native dialogs that reached the browser:', dialogs);
 const st = await (await fetch(`${L}/debug/state`)).json();
 const checks = [];
@@ -97,5 +102,6 @@ check('Shadow DOM table: the right row (PO-1077) approved', st.pos.find((p) => p
   st.pos.filter((p) => p.status === 'Approved').length === 1, st.pos.filter((p) => p.status !== 'Pending'));
 check('File upload: timesheet uploaded for September 2026', st.timesheets.length === 1 && /september/i.test(JSON.stringify(ts)), ts);
 check('Native confirm dialog answered by the assistant (none left for the user)', dialogs.length === 0, dialogs);
+check('Typing a name picks the one matching suggestion', typedPick, typed);
 console.log(`${checks.filter(Boolean).length}/${checks.length} checks passed`);
 await ctx.close();

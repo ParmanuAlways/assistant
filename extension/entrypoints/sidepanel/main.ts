@@ -368,10 +368,13 @@ $('prompt-form').onsubmit = async (e) => {
   $<HTMLTextAreaElement>('prompt').value = '';
   autogrow();
   log(prompt, 'user');
-  if (COMMS_SEARCH.test(prompt) && COMMS_WORDS.test(prompt)) {   // a search, not a task: no need to drive the browser
-    await answerCommsSearch(prompt);
-    return;
-  }
+  await runPrompt(prompt);
+};
+
+async function runPrompt(prompt: string, forceBrowser = false) {
+  // a search of the user's communications, not a task: answered from the index, no need to drive the browser.
+  // Only when the index really has it: "Find the email from IT about the VPN" may be in the webmail instead.
+  if (!forceBrowser && COMMS_SEARCH.test(prompt) && COMMS_WORDS.test(prompt) && (await answerCommsSearch(prompt))) return;
   stopped = false;
   $('run-btn').hidden = true;
   $('stop-btn').hidden = false;
@@ -382,7 +385,7 @@ $('prompt-form').onsubmit = async (e) => {
   document.body.dataset.agent = result.status;
   $('run-btn').hidden = false;
   $('stop-btn').hidden = true;
-};
+}
 $('stop-btn').onclick = () => (stopped = true);
 
 // Composer: grows with the text; Enter sends, Shift+Enter adds a line
@@ -541,20 +544,27 @@ async function openComms(q?: string) {
 // "find the letter I sent to Priya about leave" in the chat: answer from the communications index
 const COMMS_SEARCH = /^\s*(find|search|show|look up|where is|list|which)\b/i;
 const COMMS_WORDS = /\b(letters?|notes?|circulars?|e-?mails?|mails?|memos?|communications?|sent|received)\b/i;
-async function answerCommsSearch(prompt: string) {
+/** Answers from the communications index. False (nothing shown) when the index has nothing with all the words asked
+ *  for: then the assistant does it in the browser. */
+async function answerCommsSearch(prompt: string): Promise<boolean> {
   if (Date.now() - comms.lastSync > 10 * 60 * 1000) await syncComms().catch(() => {});
   const r = await api<any>(`/api/comms/search?${new URLSearchParams({ q: prompt })}`);
+  if (!r.results.length || r.match !== 'all words') return false;
   const top = r.results.slice(0, 4);
   const intro = top.length ? `I found ${r.results.length}${r.results.length >= 30 ? '+' : ''} in your communications` +
     (r.relaxed ? ' (none in that period, so here are other dates)' : '') + ':' : 'I couldn’t find anything like that in your communications.';
   const row = addRow(`<span class="mark sm"></span><div class="bubble comm-results-bubble"><div>${esc(intro)}</div>${filterPills(r.query)}` +
-    `${top.map(commCard).join('')}${r.results.length > top.length ? '<button type="button" class="link small see-all">See all in Communications →</button>' : ''}</div>`,
+    `${top.map(commCard).join('')}${r.results.length > top.length ? '<button type="button" class="link small see-all">See all in Communications →</button>' : ''}` +
+    `<button type="button" class="link small in-browser">Not it? Do it in the browser instead →</button></div>`,
     'row-assistant');
   wireCards(row);
+  row.querySelector<HTMLButtonElement>('.in-browser')!.addEventListener('click', () => runPrompt(prompt, true));
+  document.body.dataset.agent = 'completed';
   row.querySelector<HTMLButtonElement>('.see-all')?.addEventListener('click', () => {
     document.querySelector<HTMLButtonElement>('nav button[data-tab=comms]')!.click();
     openComms(prompt);
   });
+  return true;
 }
 
 // ---------------------------------------------------------------- history
@@ -737,7 +747,16 @@ async function loadPlaybooks() {
   $('playbook-list').innerHTML = rows.map((p) => `<div class="task"><b>${esc(p.task)}</b> · ${esc(p.site)} · ` +
     `<span class="badge">${esc(p.status)}</span> <span class="muted">${esc(p.source)} by ${esc(p.updated_by)}</span>` +
     (isAdmin && p.status === 'pending' ? ` <button class="link" data-approve="${p.id}">approve</button>` : '') +
+    // there is no server to share it through: an admin copies it into the browser policy ("playbooks") for everyone
+    (p.source === 'teach' ? ` <button class="link small" data-export="${p.id}" title="Copy this playbook in the form the browser policy takes, to share it with everyone">copy for policy</button>` : '') +
     `<pre style="white-space:pre-wrap">${esc(p.steps)}</pre></div>`).join('');
+  $('playbook-list').querySelectorAll<HTMLButtonElement>('[data-export]').forEach((b) => {
+    b.onclick = async () => {
+      const p = rows.find((x) => String(x.id) === b.dataset.export);
+      await navigator.clipboard.writeText(JSON.stringify({ site: p.site, task: p.task, steps: p.steps, ...(p.macro ? { macro: JSON.parse(p.macro) } : {}) }, null, 2));
+      b.textContent = 'copied';
+    };
+  });
   $('playbook-list').querySelectorAll<HTMLButtonElement>('[data-approve]').forEach((b) => {
     b.onclick = async () => { await api(`/api/playbooks/${b.dataset.approve}/approve`, 'POST'); loadPlaybooks(); };
   });

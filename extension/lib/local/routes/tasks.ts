@@ -324,6 +324,11 @@ route('POST', '/api/tasks/:id/step', async ({ user: u, body, params }) => {
     const lastAct = [...evs].reverse().find((e) => e.event_type === 'model_action');
     if (lastAct?.payload.action?.action === 'click' && (page.text || '') === LAST_PAGE_TEXT.get(taskId) && !res.dialog)
       observed.push('the page did not change');   // (typing changes field values, not the page text)
+    if (lastAct?.payload.action?.action === 'click_xy' && (page.text || '') === LAST_PAGE_TEXT.get(taskId) && !res.dialog) {
+      // a click on a drawing that changed nothing ("Selected seat: none"): the point was a little off. Look again.
+      observed.push('the click hit nothing on the drawing (the page did not change)');
+      st.missed_xy = true;
+    }
     if (observed.length) res.observed = observed.join('; ');
     await logEvent(u.emp_id, 'action_result', res, { task_id: taskId, url: page.url ?? null });
     st.fails = body.last_result.ok && !page.errors?.length ? 0 : st.fails + 1;
@@ -429,13 +434,20 @@ route('POST', '/api/tasks/:id/step', async ({ user: u, body, params }) => {
       macroAct = { action: target.tag === 'select' ? 'select' : 'type', id: target.id, value: ans, thought: `Entering the ${fix.label} you gave me.` };
   }
   const drawing = page.elements.find((e: any) => e.type === 'drawing' && e.rect);
+  if (st.missed_xy && drawing && !image && visionOk && (st.vision_tries || 0) < 3) {
+    st.vision_tries = (st.vision_tries || 0) + 1;
+    st.vision_reason = 'drawing';
+    st.zoom = 3;   // a different, closer view: the same picture would give the same answer
+    macroAct = { action: 'look', thought: 'That click missed: looking at the drawing again, closer.' };
+  }
+  delete st.missed_xy;
   if (image && drawing) {
     const reason = st.vision_reason;
     delete st.vision_reason;
     if (reason === 'drawing') {
       try {
         let target: string;
-        [macroAct, target] = await agent.locateInDrawing(cfg, t.prompt, image, drawing, st.last_target || '');
+        [macroAct, target] = await agent.locateInDrawing(cfg, t.prompt, image, drawing, st.last_target || '', st.zoom || 2);
         await logEvent(u.emp_id, 'vision_locate', { target, action: macroAct }, { task_id: taskId });
         st.last_target = macroAct ? target : st.last_target || '';
       } catch (e: any) {
@@ -555,11 +567,22 @@ route('POST', '/api/tasks/:id/step', async ({ user: u, body, params }) => {
       for (const r of await taskEvents(taskId)) if (r.event_type === 'user_answer') answered[r.payload.field] = r.payload.answer;
       const slug = (label: string) => 'fill_' + (label || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
       const fields = agent.missingRequiredFields(page);
+      const radios = agent.missingRadioGroups(page);   // e.g. "ID proof": Aadhaar / PAN / Passport
       const known = fields.find((e: any) => answered[slug(e.label)] && !NON_ANSWER.test(answered[slug(e.label)]));
+      const norm = (x: string) => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      const chosen = radios.map((r) => {
+        const a = answered[slug(r.group)];
+        return a && r.options.find((o) => norm(o.label) && (norm(a) === norm(o.label) || norm(a).includes(norm(o.label))));
+      }).find(Boolean);
+      const unasked = radios.find((r) => !(slug(r.group) in answered));
       if (known) act = { action: known.tag === 'select' ? 'select' : 'type', id: known.id, value: answered[slug(known.label)], thought: 'Filling in the value you gave me.' };
       else if (fields.length && !(slug(fields[0].label) in answered))
         act = { action: 'ask_user', field: slug(fields[0].label), question: `What should I enter for '${fields[0].label ?? 'None'}'?`, remember: false,
           thought: 'A required field is still empty.' };
+      else if (chosen) act = { action: 'click', id: chosen.id, thought: `Choosing "${chosen.label}" as you said.` };
+      else if (unasked)
+        act = { action: 'ask_user', field: slug(unasked.group), question: `Which one for '${unasked.group}'?`, options: unasked.options.map((o) => o.label),
+          remember: false, thought: 'A required choice is still empty.' };
       else act = { action: 'fail', summary: `Could not complete the form: ${missing.join(', ')} still empty.`, thought: '' };
     }
   }
@@ -611,6 +634,17 @@ route('POST', '/api/tasks/:id/step', async ({ user: u, body, params }) => {
     act.question = `Which file should I attach for '${element.label || 'the file field'}'?`;
   if (act.action === 'type' && element?.readonly && agent.parseDates(act.value || '', today).size)
     act = { ...act, action: 'pick_date', value: [...agent.parseDates(act.value, today)].sort()[0] };
+  else if (act.action === 'type' && element?.readonly) {
+    // A read-only box filled by the button next to it ("Cost centre [....] [Lookup...]"): typing can't work, so press the
+    // button (the model then picks the value in what opens). Without this, models retry the typing until stopped.
+    const els: any[] = page.elements || [];
+    const next = els[els.findIndex((e: any) => e.id === element.id) + 1];
+    if (next && (next.frame || null) === (element.frame || null) && (next.tag === 'button' || next.tag === 'a' || ['button', 'submit'].includes(next.type))
+        && /lookup|select|choose|pick|browse|search|find|\.\.\.|…/i.test(`${next.text || ''} ${next.label || ''}`) && !/submit|save|create|send/i.test(next.text || '')) {
+      act = { action: 'click', id: next.id, thought: `'${element.label || 'This field'}' is filled with its '${next.text || next.label}' button.` };
+      element = next;
+    }
+  }
   if (['type', 'select', 'autocomplete', 'pick_date'].includes(act.action) && element && !String(act.value ?? '').trim()) {
     // An empty value means the model doesn't know it: ask the person instead of typing nothing
     const label = element.label || element.text || 'this field';

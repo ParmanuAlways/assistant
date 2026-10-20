@@ -65,7 +65,7 @@ th { font-weight: 500; color: var(--muted); }
 .mark.sm { width: 24px; height: 24px; border-radius: 8px; } .mark.sm::after { font-size: 12px; }
 .mark.xl { width: 56px; height: 56px; border-radius: 18px; } .mark.xl::after { font-size: 28px; }
 .mark.glow { box-shadow: 0 8px 30px rgba(124, 58, 237, .35); }
-.mark.busy { animation: spin 2.4s linear infinite; }
+/* no endless animations besides the one small spinner: on PCs without a graphics card each one costs CPU */
 @keyframes spin { to { filter: hue-rotate(360deg); } }
 
 /* ---------------------------------------------------------------- signed out */
@@ -86,7 +86,7 @@ th { font-weight: 500; color: var(--muted); }
 .status { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; max-width: 190px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34, 197, 94, .18); flex: none; }
-body[data-agent=running] .dot { background: #a855f7; box-shadow: 0 0 0 3px rgba(168, 85, 247, .2); animation: pulse 1.2s infinite; }
+body[data-agent=running] .dot { background: #a855f7; box-shadow: 0 0 0 3px rgba(168, 85, 247, .2); }
 @keyframes pulse { 50% { opacity: .35; } }
 .me { display: flex; align-items: center; gap: 6px; }
 .me-text { text-align: right; line-height: 1.25; } #user-name { font-weight: 600; font-size: 13px; }
@@ -170,9 +170,9 @@ body[data-agent=running] .dot { background: #a855f7; box-shadow: 0 0 0 3px rgba(
 .steps li.action .si { background: var(--brand-soft); color: var(--brand-ink); }
 .steps li.error { color: var(--err); } .steps li.error .si { background: var(--err-soft); }
 .steps li.note .si { background: var(--warn-soft); }
-.steps li.current .si { animation: pulse 1.2s infinite; }
+.steps li.current .si { opacity: .7; }
 .shimmer { background: linear-gradient(90deg, var(--muted) 0%, var(--fg) 40%, var(--muted) 80%); background-size: 200% 100%;
-  -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 1.6s linear infinite; }
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
 /* questions */
