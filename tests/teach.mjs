@@ -1,5 +1,5 @@
 // Teach-mode test: a person (scripted) records a workflow once through the Teach tab, the model drafts
-// a playbook, the user saves it (pending) and an admin approves it. Usage: xvfb-run -a node teach.mjs <label> <demo>
+// a playbook, the user saves it and it is used from then on (in this browser; admins share it through policy). Usage: xvfb-run -a node teach.mjs <label> <demo>
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -132,19 +132,13 @@ try {
   await panel.waitForFunction(() => document.body.dataset.teach === 'saved');
   result.saved_status = await panel.textContent('#teach-status');
 
-  // 2. An admin approves it
-  await panel.click('#logout-btn');
-  await panel.waitForSelector('#signed-out:not([hidden])');
-  await signIn('admin1', 'admin123');
-  await panel.click('nav button[data-tab=teach]');
-  await panel.waitForSelector('[data-approve]');
-  await panel.click('[data-approve]');
-  await panel.waitForFunction(() => !document.querySelector('[data-approve]'));
-  await panel.screenshot({ path: path.join(OUT, '4-approved.png'), fullPage: true });
-  result.approved = true;
+  // 2. It is active straight away (there is no server where an admin would approve it)
+  await panel.waitForSelector('#playbook-list .task');
+  result.active = (await panel.textContent('#playbook-list')).includes('active');
+  await panel.screenshot({ path: path.join(OUT, '4-active.png'), fullPage: true });
   console.log('RECORDED:\n  ' + result.recorded.join('\n  '));
   console.log('DRAFT PLAYBOOK:\n' + result.draft);
-  console.log('SAVED:', result.saved_status, '| APPROVED by admin1');
+  console.log('SAVED:', result.saved_status, '| active:', result.active);
 } catch (e) {
   result.error = String(e.stack || e);
   console.error('TEACH CRASH', e);

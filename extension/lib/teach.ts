@@ -1,4 +1,4 @@
-// Teach mode: record a person doing a workflow once (clicks, field values, pages) so the backend can
+// Teach mode: record a person doing a workflow once (clicks, field values, pages) so the assistant can
 // turn it into a playbook and a replayable workflow. The recorder runs in every frame of the page; it never
 // records password values.
 import { browser } from 'wxt/browser';

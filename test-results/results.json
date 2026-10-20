@@ -37,20 +37,20 @@
   {
     "name": "Test connection to the model works",
     "ok": true,
-    "detail": "✅ Connected (130 ms) · structured output: JSON schema · system role: yes"
+    "detail": "✅ Connected (8 ms) · structured output: JSON schema · system role: yes"
   },
   {
-    "name": "Server rejects a custom endpoint when policy forbids it",
+    "name": "A custom endpoint is refused when policy forbids it",
     "ok": true,
     "detail": "Your administrator has not allowed custom model endpoints."
   },
   {
-    "name": "Normal user cannot change admin policy",
+    "name": "Admin rules cannot be changed from the assistant (only by browser policy)",
     "ok": true,
     "detail": ""
   },
   {
-    "name": "Normal user cannot use auditor endpoints",
+    "name": "Normal user cannot use auditor functions",
     "ok": true,
     "detail": ""
   },
@@ -77,7 +77,7 @@
   {
     "name": "Leave really saved in the portal with correct details",
     "ok": true,
-    "detail": "{\"id\":1,\"ref\":\"LR-1001\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Casual Leave\",\"from_date\":\"2026-10-19\",\"to_date\":\"2026-10-21\",\"days\":3,\"reason\":\"family function\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 05:42:01\"}"
+    "detail": "{\"id\":1,\"ref\":\"LR-1001\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Casual Leave\",\"from_date\":\"2026-10-19\",\"to_date\":\"2026-10-21\",\"days\":3,\"reason\":\"family function\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 07:37:36\"}"
   },
   {
     "name": "Panel shows the leave reference to the user",
@@ -97,7 +97,7 @@
   {
     "name": "Task 2 saved correctly",
     "ok": true,
-    "detail": "{\"id\":2,\"ref\":\"LR-1002\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Sick Leave\",\"from_date\":\"2026-11-02\",\"to_date\":\"2026-11-02\",\"days\":1,\"reason\":\"medical checkup\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 05:42:18\"}"
+    "detail": "{\"id\":2,\"ref\":\"LR-1002\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Sick Leave\",\"from_date\":\"2026-11-02\",\"to_date\":\"2026-11-02\",\"days\":1,\"reason\":\"medical checkup\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 07:37:52\"}"
   },
   {
     "name": "Declining the confirmation stops the task and submits nothing",
@@ -125,9 +125,14 @@
     "detail": ""
   },
   {
-    "name": "Admin can allow custom model endpoints",
+    "name": "Even an admin changes rules through browser policy, not the assistant",
     "ok": true,
-    "detail": ""
+    "detail": "Admin rules come from browser policy (set by IT), not from the assistant."
+  },
+  {
+    "name": "The policy now allows custom model endpoints",
+    "ok": true,
+    "detail": "{\"allow_custom_endpoints\":true,\"allowed_model_hosts\":[\"*.office.local\",\"127.0.0.1\",\"localhost\",\"10.0.0.0/8\"],\"allowed_sites\":[\"*.office.local\"],\"max_steps\":40}"
   },
   {
     "name": "Custom endpoint option visible once allowed",
@@ -152,7 +157,7 @@
   {
     "name": "When the chosen model is down, it falls back to the default and logs it",
     "ok": true,
-    "detail": "{\"error\": \"[Errno 111] Connection refused\", \"fallback\": \"stand-in-v1\", \"model\": \"stand-in-v1\", \"url\": \"http://llm.office.local:9999/v1\"}"
+    "detail": "{\"model\":\"stand-in-v1\",\"url\":\"http://llm.office.local:9999/v1\",\"error\":\"cannot reach the model server: Failed to fetch\",\"fallback\":\"stand-in-v1\"}"
   },
   {
     "name": "Pre-submit verifier flags a form that does not match the request",
@@ -170,7 +175,7 @@
     "detail": "0 hits"
   },
   {
-    "name": "Audit table refuses UPDATE/DELETE",
+    "name": "No password stored anywhere in the extension",
     "ok": true,
     "detail": ""
   },
@@ -192,11 +197,11 @@
   {
     "name": "Integrity check passes on the untouched log",
     "ok": true,
-    "detail": "✔ Chain valid — 132 events checked"
+    "detail": "✔ Chain valid — 131 events checked"
   },
   {
     "name": "Integrity check detects a tampered record",
     "ok": true,
-    "detail": "✖ TAMPERING DETECTED at event #27 (user_answer, task eb1def3d-7cbb-4d50-b398-ceb34b7366e8, step 26) after 26 valid events"
+    "detail": "✖ TAMPERING DETECTED at event #27 (user_answer, task 1137551c-e277-4f28-8dd0-47fa689b1d77, step 26) after 26 valid events"
   }
 ]

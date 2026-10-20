@@ -1,6 +1,6 @@
 // Letters downloaded from e-Office (or any site in letterSources): read as the user, filed per correspondent.
+// Light on purpose (no pdf.js, no router): the Chrome background service worker uses it too.
 import { browser } from 'wxt/browser';
-import { api } from './api';
 import { getConfig, type Config } from './config';
 
 export interface Filed { id: number; folder: string; file_name: string; intent_label: string; subject: string; new: boolean }
@@ -53,10 +53,6 @@ export async function fetchAsUser(url: string): Promise<ArrayBuffer | null> {
     if (res?.result) return fromB64(res.result).buffer as ArrayBuffer;
   }
   return null;
-}
-
-export async function ingest(buf: ArrayBuffer, url: string, name: string): Promise<Filed> {
-  return api<Filed>('/api/letters/ingest', 'POST', { pdf_b64: toB64(buf), url, original_name: name, source: 'e-Office' });
 }
 
 /** Where a letter goes inside Downloads: eOffice/<Correspondent>/<date - type - subject - file no>.pdf */

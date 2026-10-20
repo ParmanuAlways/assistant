@@ -30,7 +30,10 @@
           <button id="verify-btn" class="primary">Verify integrity</button>
           <span id="verify-result"></span>
           <button id="export-btn">Export CSV</button>
+          <button id="export-json-btn" title="Every event of this browser's audit trail, to collect centrally">Export audit log (JSON)</button>
         </div>
+        <p class="small muted">There is no central server: this is the audit trail kept in <b>this browser</b>. To review
+          several PCs, export each one's log (JSON); the integrity check can be repeated on the exported file.</p>
         <div class="filters">
           <label>Employee ID <input id="f-emp" placeholder="EMP1042" /></label>
           <label>Status <select id="f-status"><option value="">Any</option><option>completed</option><option>failed</option><option>cancelled</option><option>running</option></select></label>

@@ -1,10 +1,6 @@
 {
   "type": "object",
   "properties": {
-    "apiUrl": {
-      "type": "string",
-      "description": "Office Assistant backend, e.g. http://ai.office.local:8000"
-    },
     "keycloakUrl": {
       "type": "string",
       "description": "Keycloak realm URL, e.g. http://keycloak.office.local:8080/realms/company"
@@ -52,6 +48,122 @@
     "letterFolder": {
       "type": "string",
       "description": "Folder inside Downloads where letters are filed (default eOffice)"
+    },
+    "models": {
+      "type": "array",
+      "description": "Model servers users can choose from (OpenAI-compatible: llama.cpp, Ollama, vLLM). The one with default=true is used unless the user picks another.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "vision": {
+            "type": "boolean"
+          },
+          "json_mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "schema",
+              "object",
+              "none"
+            ]
+          },
+          "context_tokens": {
+            "type": "integer"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "allowCustomEndpoints": {
+      "type": "boolean",
+      "description": "Let users type in their own model server (only on allowedModelHosts)"
+    },
+    "allowedModelHosts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Hosts custom model servers may be on (wildcards like *.office.local, or IP ranges like 10.0.0.0/8)"
+    },
+    "allowedSites": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Sites the assistant may act on (wildcards like *.office.local)"
+    },
+    "maxSteps": {
+      "type": "integer",
+      "description": "Most steps one task may take"
+    },
+    "playbooks": {
+      "type": "array",
+      "description": "How to use each office site, shared with everyone",
+      "items": {
+        "type": "object",
+        "properties": {
+          "site": {
+            "type": "string"
+          },
+          "task": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "string"
+          },
+          "macro": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "directoryUrl": {
+      "type": "string",
+      "description": "Optional JSON list of colleagues [{name, email}] on an intranet web server, so the assistant never guesses e-mail addresses"
+    },
+    "agent": {
+      "type": "object",
+      "description": "Assistant behaviour",
+      "properties": {
+        "plan": {
+          "type": "boolean"
+        },
+        "workflows": {
+          "type": "boolean"
+        },
+        "calendar": {
+          "type": "boolean"
+        },
+        "vision": {
+          "type": "boolean"
+        },
+        "today": {
+          "type": "string"
+        }
+      }
     }
   }
 }

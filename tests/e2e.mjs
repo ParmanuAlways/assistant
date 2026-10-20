@@ -1,4 +1,5 @@
-// End-to-end test: real Chromium + the built extension + Keycloak + backend + HR portal.
+// End-to-end test: real Chromium + the built extension + Keycloak + HR portal. No assistant server: the extension
+// keeps everything in the browser and only calls the model server.
 // Run with: xvfb-run -a node e2e.mjs   (services must be running: ../start-services.sh)
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
@@ -10,7 +11,6 @@ const EXT = `${ROOT}/extension/.output/chrome-mv3`;
 const OUT = `${ROOT}/test-results`;
 const PROFILE = `${OUT}/.chrome-profile`;
 const EXPECTED_ID = fs.readFileSync(`${ROOT}/infra/keys/extension-id.txt`, 'utf8').trim();
-const AGENT_DB = `${ROOT}/backend/agent.db`;
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -27,7 +27,6 @@ async function shot(page, name) {
   return file;
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const sql = (q) => execFileSync('python3', ['-c', `import sqlite3,json,sys;c=sqlite3.connect(sys.argv[1]);r=c.execute(sys.argv[2]).fetchall();c.commit();print(json.dumps(r))`, AGENT_DB, q], { stdio: ['ignore', 'pipe', 'pipe'] }).toString();
 const portalLeaves = async () => (await fetch('http://hr.office.local:8200/debug/leaves')).json();
 
 const ctx = await chromium.launchPersistentContext(PROFILE, {
@@ -75,14 +74,26 @@ try {
     await panel.click('#logout-btn');
     await panel.waitForSelector('#signed-out:not([hidden])');
   }
-  // Call the backend from inside the extension with the signed-in user's token
+  // Call the assistant's API (answered inside the extension) as the signed-in user
   const apiAs = (p, path, method = 'GET', body) => p.evaluate(async ({ path, method, body }) => {
-    const { tokens } = await chrome.storage.session.get('tokens');
-    const r = await fetch('http://ai.office.local:8000' + path, {
-      method, body: body ? JSON.stringify(body) : undefined,
-      headers: { Authorization: 'Bearer ' + tokens.access_token, 'Content-Type': 'application/json' } });
-    return { status: r.status, body: await r.json().catch(() => null) };
+    try {
+      return { status: 200, body: await window.__officeAssistantDebug.api(path, method, body) };
+    } catch (e) {
+      return { status: e.status || 500, body: { detail: e.message } };
+    }
   }, { path, method, body });
+  // The audit log, read from the browser's storage
+  const events = (p) => p.evaluate(() => window.__officeAssistantDebug.store.all('events'));
+  const tasks = (p) => p.evaluate(() => window.__officeAssistantDebug.store.all('tasks'));
+  // IT pushes admin rules through browser policy; a developer build lets the test set them the same way
+  const setPolicy = (p, cfg) => p.evaluate(async (c) => {
+    const { devConfig = {} } = await chrome.storage.local.get('devConfig');
+    await chrome.storage.local.set({ devConfig: { ...devConfig, ...c, agent: { ...devConfig.agent, ...c.agent } } });
+  }, cfg);
+  // the date the test data assumes ("from Monday"), as ./start-services.sh was told (AGENT_TODAY)
+  let started = {};
+  try { started = JSON.parse(fs.readFileSync(`${ROOT}/infra/logs/run-env.json`, 'utf8')); } catch {}
+  await setPolicy(panel, { agent: { today: process.env.AGENT_TODAY || started.AGENT_TODAY || '2026-10-18' } });
   async function tab(name) {
     await panel.click(`nav button[data-tab=${name}]`);
     await sleep(600);
@@ -112,11 +123,11 @@ try {
   check('Test connection to the model works', testStatus.includes('Connected'), testStatus);
   await shot(panel, 'settings');
   const customDenied = await apiAs(panel, '/api/settings', 'PUT', { mode: 'custom', custom_url: 'http://llm.office.local:9100/v1', custom_model: 'x' });
-  check('Server rejects a custom endpoint when policy forbids it', customDenied.status === 403, customDenied.body?.detail);
+  check('A custom endpoint is refused when policy forbids it', customDenied.status === 403, customDenied.body?.detail);
   const notAdmin = await apiAs(panel, '/api/admin/policy', 'PUT', { allow_custom_endpoints: true });
-  check('Normal user cannot change admin policy', notAdmin.status === 403);
+  check('Admin rules cannot be changed from the assistant (only by browser policy)', notAdmin.status === 403);
   const notAuditor = await apiAs(panel, '/api/audit/verify');
-  check('Normal user cannot use auditor endpoints', notAuditor.status === 403);
+  check('Normal user cannot use auditor functions', notAuditor.status === 403);
 
   // ------------------------------------------------------------ helper: run one task through the panel
   async function runTask(prompt, { answers = {}, confirm = true, label }) {
@@ -225,7 +236,10 @@ try {
   check('Sign-out clears the token', (await panel.evaluate(async () => (await chrome.storage.session.get('tokens')).tokens)) === undefined);
   await signIn('admin1', 'admin123');
   const pol = await apiAs(panel, '/api/admin/policy', 'PUT', { allow_custom_endpoints: true });
-  check('Admin can allow custom model endpoints', pol.status === 200 && pol.body.allow_custom_endpoints === true);
+  check('Even an admin changes rules through browser policy, not the assistant', pol.status === 403, pol.body?.detail);
+  await setPolicy(panel, { allowCustomEndpoints: true });   // what IT's browser policy would do
+  const pol2 = await apiAs(panel, '/api/admin/policy');
+  check('The policy now allows custom model endpoints', pol2.status === 200 && pol2.body.allow_custom_endpoints === true, JSON.stringify(pol2.body));
   await signOut();
   await signIn('ravi', 'ravi123');
 
@@ -253,32 +267,34 @@ try {
   check('Custom endpoint saved and active', (await panel.textContent('#active-model')).includes('llm.office.local:9100'));
   await shot(panel, 'settings-custom-saved');
 
-  // dead endpoint -> backend falls back to the admin default model
+  // dead endpoint -> the assistant falls back to the admin's default model
   await panel.fill('#custom-url', 'http://llm.office.local:9999/v1');
   await panel.click('#save-btn');
   await panel.waitForFunction(() => document.getElementById('active-model').textContent.includes('9999'));
   const t4 = await runTask('Apply casual leave on 5 Jan 2027 for 1 day, reason: personal work', { label: 'task4' });
-  const t4id = JSON.parse(sql("SELECT task_id FROM tasks ORDER BY started_at DESC LIMIT 1"))[0][0];
-  const fallbackEvents = JSON.parse(sql(`SELECT payload FROM events WHERE task_id='${t4id}' AND event_type='model_error'`));
+  const t4id = (await tasks(panel)).sort((a, b) => (a.started_at < b.started_at ? 1 : -1))[0].task_id;
+  const t4events = (await events(panel)).filter((e) => e.task_id === t4id);
+  const fallbackEvents = t4events.filter((e) => e.event_type === 'model_error');
   check('When the chosen model is down, it falls back to the default and logs it', t4.status === 'completed' && fallbackEvents.length > 0,
-    fallbackEvents[0]?.[0]?.slice(0, 160));
+    JSON.stringify(fallbackEvents[0]?.payload || {}).slice(0, 160));
   // The rule-based stand-in clicks Submit on the form left over from the declined task (10-12 Dec): the pre-submit
   // verifier must notice that the request's date (5 Jan 2027) is not on the form, and tell the user
-  const t4conf = JSON.parse(sql(`SELECT payload FROM events WHERE task_id='${t4id}' AND event_type='confirmation'`)).map((r) => JSON.parse(r[0]));
+  const t4conf = t4events.filter((e) => e.event_type === 'confirmation').map((e) => e.payload);
   check('Pre-submit verifier flags a form that does not match the request', t4conf.some((c) => (c.checks || []).some((x) => x.includes('05 Jan 2027'))),
     JSON.stringify(t4conf.map((c) => c.checks)).slice(0, 200));
   await tab('settings');
   await panel.check('input[name=mode][value=list]');
   await panel.click('#save-btn');
-  const changes = JSON.parse(sql("SELECT COUNT(*) FROM events WHERE event_type='settings_changed'"))[0][0];
+  await sleep(500);
+  const changes = (await events(panel)).filter((e) => e.event_type === 'settings_changed').length;
   check('Every settings change is in the audit log', changes >= 3, `${changes} settings_changed events`);
 
   // ------------------------------------------------------------ 10. Security checks on stored data
-  const pwHits = JSON.parse(sql("SELECT COUNT(*) FROM events WHERE payload LIKE '%ravi123%' OR payload LIKE '%admin123%'"))[0][0];
+  const pwHits = (await events(panel)).filter((e) => /ravi123|admin123/.test(JSON.stringify(e))).length;
   check('No password ever reaches the audit log', pwHits === 0, `${pwHits} hits`);
-  let appendOnly = false;
-  try { sql("UPDATE events SET payload='{}' WHERE id=1"); } catch (e) { appendOnly = String(e.stderr || e).includes('append-only'); }
-  check('Audit table refuses UPDATE/DELETE', appendOnly);
+  const leaked = await panel.evaluate(async () => JSON.stringify(await chrome.storage.local.get(null)) + JSON.stringify(
+    await Promise.all(['tasks', 'profile', 'settings'].map((s) => window.__officeAssistantDebug.store.all(s)))));
+  check('No password stored anywhere in the extension', !/ravi123|admin123/.test(leaked));
 
   // ------------------------------------------------------------ 11. Auditor dashboard
   await signOut();
@@ -301,10 +317,18 @@ try {
   check('Integrity check passes on the untouched log', v1.includes('Chain valid'), v1);
   await shot(audit, 'audit-dashboard-valid');
 
-  // Simulate someone with database access editing history behind the app's back
-  sql("DROP TRIGGER events_no_update");
-  sql("UPDATE events SET payload=replace(payload, '9123456780', '9000000000') WHERE event_type='user_answer'");
-  sql("CREATE TRIGGER events_no_update BEFORE UPDATE ON events BEGIN SELECT RAISE(ABORT, 'audit log is append-only'); END");
+  // Simulate someone editing the history behind the assistant's back (e.g. with the browser's developer tools)
+  await audit.evaluate(async () => {
+    const db = await new Promise((ok) => { const r = indexedDB.open('office-assistant-data'); r.onsuccess = () => ok(r.result); });
+    const t = db.transaction('events', 'readwrite');
+    const s = t.objectStore('events');
+    const all = await new Promise((ok) => { const r = s.getAll(); r.onsuccess = () => ok(r.result); });
+    for (const e of all.filter((e) => e.event_type === 'user_answer')) {
+      e.payload = JSON.parse(JSON.stringify(e.payload).replace('9123456780', '9000000000'));
+      s.put(e);
+    }
+    await new Promise((ok) => (t.oncomplete = ok));
+  });
   await audit.click('#verify-btn');
   await audit.waitForFunction(() => document.getElementById('verify-result').textContent.includes('TAMPER'));
   const v2 = await audit.textContent('#verify-result');

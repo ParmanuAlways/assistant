@@ -15,9 +15,8 @@ const E = 'http://eoffice.office.local:8600';
 const W = 1440, H = 900, PANEL = 430, N = 20;
 const PROFILE = '/tmp/claude-0/letters-shots-profile';
 const DL = '/tmp/claude-0/letters-shots-downloads';
-for (const d of [PROFILE, DL, `${ROOT}/backend/letters_store`]) fs.rmSync(d, { recursive: true, force: true });
-// start from an empty register (letters from an earlier run would already be answered)
-execFileSync('python3', ['-c', `import sqlite3; c = sqlite3.connect('${ROOT}/backend/agent.db'); c.execute('DELETE FROM letters'); c.commit()`]);
+// a fresh browser profile: no letters filed yet (the assistant keeps them in the profile)
+for (const d of [PROFILE, DL]) fs.rmSync(d, { recursive: true, force: true });
 fs.mkdirSync(`${PROFILE}/Default`, { recursive: true });
 fs.mkdirSync(DL, { recursive: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -38,7 +37,7 @@ const chrome = spawn('/opt/pw-browsers/chromium-1194/chrome-linux/chrome', [
   '--window-position=0,0', `--window-size=${W - PANEL},${H}`, '--no-first-run', '--no-default-browser-check', '--test-type',
   '--hide-crash-restore-bubble', '--no-sandbox',
   // the demo e-Office is plain HTTP; Chrome holds HTTP downloads for the user to OK (a real e-Office is HTTPS)
-  `--unsafely-treat-insecure-origin-as-secure=${E},http://ai.office.local:8000`, 'about:blank'], { stdio: 'ignore' });
+  `--unsafely-treat-insecure-origin-as-secure=${E}`, 'about:blank'], { stdio: 'ignore' });
 let browser;
 for (let i = 0; i < 40 && !browser; i++) {
   await sleep(500);

@@ -391,3 +391,38 @@ are a starting point until your office's format is put in. The demo e-Office is 
 downloads until the user OKs them; the test treats it as secure (a real e-Office is HTTPS). *Choose folder* and *Tidy a
 folder* use the browser's folder picker, which the automated test cannot click, so they are **not tested yet**. Firefox files letters with *File my downloads* (it has no way to rename a download
 as it starts); not re-run in Firefox this round.
+
+
+# Part 6 — No server: everything in the browser (20 Oct)
+
+Parts 1–5 were measured with a Python backend. The assistant now has **no server of its own**: the backend was
+ported to TypeScript inside the extension (`extension/lib/local/`) and deleted. The extension keeps its data in the
+browser (IndexedDB, with the same hash-chained audit log) and calls only the AI model, directly, over its
+OpenAI-compatible API. Admin rules (models, allowed sites, step limit, playbooks, custom endpoints) come from
+browser policy instead of an admin API.
+
+Same checks after the move, with no backend running:
+
+| Test | Result |
+|---|---|
+| Unit checks in Node (`tests/local/*.test.ts`, fake IndexedDB): agent loop, verifier, provenance, workflows, model calls against a fake model server | 60/60 |
+| … comms search, profile, apps, home, history, audit | 40/40 |
+| … letters: all 100 dummy letters read from their PDFs (every field 100/100), filing, replies, Word | 23/23 |
+| … storage and audit chain (an edited entry breaks the chain) | 5/5 |
+| End to end in Chrome (`e2e.mjs`): sign-in, profile from directory, settings and model test, 4 leave tasks, learning, decline, history with screenshots, policy rules, model fallback, pre-submit verifier, no password stored, auditor dashboard, tamper detection | 41/41 |
+| Letters in Chrome (`letters-shots.mjs`): downloads filed per sender, replies, Draft all, File my downloads | 14/14 |
+| Comms in Chrome (`comms-shots.mjs`) | 7/7 |
+| End to end in Firefox (`firefox_e2e.py`) | 14/14 |
+
+What changed in behaviour:
+- **Audit log:** still hash-chained, so editing or deleting an entry (now possible with the browser's developer
+  tools rather than with database access) is detected by *Verify* (tested). An auditor sees the log of the
+  browser the dashboard is opened in; *Export audit log* saves it for collecting centrally.
+- **Admin rules** cannot be changed from the assistant, even by an admin; IT sets them by browser policy
+  (`public/managed-schema.json`). Developer builds (loaded unpacked) also read test settings from storage, which is
+  how the tests set the date and the model; an installed extension ignores them.
+- **Taught playbooks** work at once in the browser where they were taught; to share one, an admin puts it in policy.
+- **Colleagues' e-mail addresses** come from a static JSON list on an intranet web server (`directoryUrl`) instead of
+  a server-side Keycloak admin search.
+- Not re-measured after the move: the real-model (Gemma) evaluations of Parts 1–4. The prompts, checks and
+  decisions were ported unchanged and the unit checks pin them, but results with a real model have not been re-run.

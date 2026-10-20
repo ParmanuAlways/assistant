@@ -6,7 +6,7 @@ start() {
   "$ROOT/reset-data.sh"
   MMPROJ="${MMPROJ:-}" /home/user/models/serve.sh "/home/user/models/${m}-q4_k_m.gguf" || exit 1
   env $1 AGENT_TODAY="${TODAY:-2026-10-19}" AGENT_CALENDAR=1 AGENT_SCHEMA=1 DEFAULT_MODEL_URL=http://llm.office.local:9200/v1 \
-    DEFAULT_MODEL_NAME="$m" "$ROOT/start-services.sh" >/dev/null
+    export DEFAULT_MODEL_NAME="$m"; "$ROOT/start-services.sh" >/dev/null
 }
 TODAY=2026-10-18 start ""
 echo "=================== intranet regression (final)  $(date +%T)"

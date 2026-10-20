@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Starts the demo stack: Keycloak :8080, stand-in model :9100, backend :8000, HR portal :8200.
+# Starts the demo stack: Keycloak :8080, stand-in model :9100, and the demo office sites (HR :8200, intranet :8300,
+# webmail :8400, Legacy ERP :8500, e-Office :8600). The assistant itself has no server: it is just the extension.
 # Hostnames *.office.local must resolve to this machine (see /etc/hosts).
 set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -19,12 +20,14 @@ fi
 python3 "$ROOT/infra/setup_keycloak.py"
 
 (cd "$ROOT/standin-model" && nohup python3 -m uvicorn server:app --host 0.0.0.0 --port 9100 > "$LOGS/model.log" 2>&1 &)
-(cd "$ROOT/backend" && DEFAULT_MODEL_URL="${DEFAULT_MODEL_URL:-http://llm.office.local:9100/v1}" DEFAULT_MODEL_NAME="$DEFAULT_MODEL_NAME" AGENT_CALENDAR="${AGENT_CALENDAR:-1}" AGENT_SCHEMA="${AGENT_SCHEMA:-}" AGENT_JSON_MODE="${AGENT_JSON_MODE:-}" AGENT_TODAY="${AGENT_TODAY:-}" nohup python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 > "$LOGS/backend.log" 2>&1 &)
+# The model and switches a test run asked for (DEFAULT_MODEL_URL=... ./start-services.sh): the browser tests hand them
+# to the extension as browser policy would (tests/eval.mjs reads this file)
+python3 -c 'import json, os; json.dump({k: v for k, v in os.environ.items() if k.startswith(("AGENT_", "DEFAULT_MODEL_"))}, open(os.sys.argv[1], "w"))' "$LOGS/run-env.json"
 (cd "$ROOT/portal" && nohup python3 -m uvicorn app:app --host 0.0.0.0 --port 8200 > "$LOGS/portal.log" 2>&1 &)
 (cd "$ROOT/portal" && nohup python3 -m uvicorn intranet:app --host 0.0.0.0 --port 8300 > "$LOGS/intranet.log" 2>&1 &)
 (cd "$ROOT/portal" && nohup python3 -m uvicorn legacy:app --host 0.0.0.0 --port 8500 > "$LOGS/legacy.log" 2>&1 &)
 (cd "$ROOT/portal" && nohup python3 -m uvicorn eoffice:app --host 0.0.0.0 --port 8600 > "$LOGS/eoffice.log" 2>&1 &)
-for u in http://llm.office.local:9100/v1/models http://ai.office.local:8000/api/health http://hr.office.local:8200/ http://intranet.office.local:8300/ http://legacy.office.local:8500/debug/state http://eoffice.office.local:8600/login; do
+for u in http://llm.office.local:9100/v1/models http://hr.office.local:8200/ http://intranet.office.local:8300/ http://legacy.office.local:8500/debug/state http://eoffice.office.local:8600/login; do
   until curl -sf "$u" >/dev/null; do sleep 1; done
 done
 echo "All services up."

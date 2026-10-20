@@ -111,6 +111,8 @@ def main():
 
         panel = open_extension_page("sidepanel.html")
         wait().until(EC.visibility_of_element_located((By.ID, "login-btn")))
+        # the date the test data assumes ("from Monday" = 19 Oct), set the way IT's browser policy would
+        driver.execute_async_script("browser.storage.local.set({devConfig: {agent: {today: '2026-10-18'}}}).then(arguments[0])")
         redirect = driver.execute_async_script("arguments[0](browser.identity.getRedirectURL())")
         check("Firefox identity redirect URL", "extensions.allizom.org" in redirect, redirect)
         keycloak_allow_redirect(redirect)

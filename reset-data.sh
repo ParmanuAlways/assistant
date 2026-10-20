@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Stops the Python services and wipes demo data (agent DB, portal DB, screenshots). Keycloak keeps running.
+# Stops the demo sites and wipes their data. Keycloak keeps running. (The assistant keeps its data in each browser profile.)
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-pkill -f "uvicorn (server|main|app|intranet|legacy|eoffice):app" || true
+pkill -f "uvicorn (server|app|intranet|legacy|eoffice):app" || true
 sleep 3
 pkill -9 -f "uvicorn (server|main|app|intranet|legacy|eoffice):app" || true   # a server stuck finishing a request
 sleep 1
-rm -f "$ROOT/backend"/agent.db* "$ROOT/portal/portal.db" "$ROOT/portal/intranet.db"
-rm -rf "$ROOT/backend/screenshots"
+rm -f "$ROOT/portal/portal.db" "$ROOT/portal/intranet.db"

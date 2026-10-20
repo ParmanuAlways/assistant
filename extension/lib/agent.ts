@@ -1,4 +1,4 @@
-// The agent loop: read page -> ask backend (which asks the model and logs everything) -> act.
+// The agent loop: read page -> decide the next step (lib/local: asks the model, logs everything) -> act.
 import { browser, type Browser } from 'wxt/browser';
 import { api } from './api';
 import { act, ActionResult, endTask, forBackend, PageSnapshot, showWorking, snapshot } from './page';
@@ -255,7 +255,7 @@ export async function runTask(prompt: string, ui: AgentUI): Promise<{ status: st
         continue;
       }
 
-      if (a.action === 'look') {   // the backend wants a screenshot before deciding (vision fallback)
+      if (a.action === 'look') {   // the assistant wants a screenshot before deciding (vision fallback)
         continue;
       }
 

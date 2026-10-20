@@ -11,7 +11,7 @@ for m in $MODELS; do
     f="/home/user/models/${m}-q4_k_m.gguf"
     while [ ! -f "$f" ]; do sleep 30; done      # still downloading
     /home/user/models/serve.sh "$f" || continue
-    DEFAULT_MODEL_URL=http://llm.office.local:9200/v1 DEFAULT_MODEL_NAME="$m" "$ROOT/start-services.sh" >/dev/null
+    export DEFAULT_MODEL_URL=http://llm.office.local:9200/v1 DEFAULT_MODEL_NAME="$m"; "$ROOT/start-services.sh" >/dev/null
   fi
   (cd "$ROOT/tests" && xvfb-run -a node eval.mjs "$m")
 done

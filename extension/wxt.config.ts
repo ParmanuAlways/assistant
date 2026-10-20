@@ -10,9 +10,10 @@ export default defineConfig({
     description: 'Offline AI assistant that operates intranet websites for you.',
     version: '0.1.0',
     ...(browser === 'chrome' ? { key: EXTENSION_KEY } : {}),
-    permissions: ['identity', 'storage', 'sidePanel', 'scripting', 'tabs', 'downloads'],
+    permissions: ['identity', 'storage', 'sidePanel', 'scripting', 'tabs', 'downloads', 'unlimitedStorage',
+      ...(browser === 'chrome' ? ['offscreen'] : [])],   // offscreen: reading downloaded PDFs in Chrome's background
     // <all_urls> is required by Chrome for tabs.captureVisibleTab (audit screenshots). Which sites the
-    // agent may act on is enforced by the backend's allowed_sites policy; admins can also limit the
+    // agent may act on is set by the allowedSites browser policy; admins can also limit the
     // extension with the ExtensionSettings runtime_blocked_hosts browser policy.
     host_permissions: ['<all_urls>'],
     storage: { managed_schema: 'managed-schema.json' },

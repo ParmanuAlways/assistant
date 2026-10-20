@@ -683,7 +683,7 @@ export async function endTask(tabId: number) {
   await showWorking(tabId, null);
 }
 
-/** Strips extension-only fields before the snapshot goes to the backend. */
+/** Strips extension-only fields before the snapshot is passed to the model and the audit log. */
 export function forBackend(page: PageSnapshot): PageSnapshot {
   return { ...page, elements: page.elements.map(({ _frameId, _local, ...e }) => e) };
 }

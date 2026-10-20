@@ -1,9 +1,8 @@
 // Letters tab: letters received through e-Office, filed per correspondent, with a reply drafted for the option the user picks.
 import { browser } from 'wxt/browser';
-import { api } from '../../lib/api';
-import { getAccessToken } from '../../lib/auth';
+import { api, apiBlob } from '../../lib/api';
 import { getConfig } from '../../lib/config';
-import { downloadsPath, fetchAsUser, fromB64, ingest, isLetterDownload } from '../../lib/letters';
+import { downloadsPath, fetchAsUser, fromB64, isLetterDownload, toB64, type Filed } from '../../lib/letters';
 import { esc } from '../../lib/timeline';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -50,11 +49,9 @@ async function writeTo(dir: any, sub: string, name: string, data: Blob | string,
   return true;
 }
 
-async function apiBlob(path: string): Promise<Blob> {
-  const { apiUrl } = await getConfig();
-  const r = await fetch(apiUrl + path, { headers: { Authorization: `Bearer ${await getAccessToken()}` } });
-  if (!r.ok) throw new Error(r.statusText);
-  return r.blob();
+/** Read a letter (in this browser) and file it */
+async function ingest(buf: ArrayBuffer, url: string, name: string): Promise<Filed> {
+  return api<Filed>('/api/letters/ingest', 'POST', { pdf_b64: toB64(buf), url, original_name: name, source: 'e-Office' });
 }
 
 /** Save into the chosen folder, else into Downloads/eOffice/<Correspondent>/ */
@@ -338,12 +335,15 @@ $('lt-status').querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.o
 }));
 
 // a letter was just downloaded from e-Office and filed by the background
-browser.runtime.onMessage.addListener(async (m: any) => {
+// (answers nothing, and synchronously: other messages, like the background's 'pdf-text' to the offscreen page, are not ours)
+browser.runtime.onMessage.addListener((m: any) => {
   if (m?.type !== 'letter-filed') return;
-  const dir = await folder();
-  if (dir) await writeTo(dir, m.letter.folder, m.letter.file_name, await apiBlob(`/api/letters/${m.letter.id}/pdf`)).catch(() => {});
-  if (!$('tab-letters').hidden && $('lt-detail').hidden) {
-    await loadLetters();
-    $('lt-info').textContent = `Filed: ${m.letter.subject?.slice(0, 60)} → 📁 ${m.letter.folder}`;
-  }
+  (async () => {
+    const dir = await folder();
+    if (dir) await writeTo(dir, m.letter.folder, m.letter.file_name, await apiBlob(`/api/letters/${m.letter.id}/pdf`)).catch(() => {});
+    if (!$('tab-letters').hidden && $('lt-detail').hidden) {
+      await loadLetters();
+      $('lt-info').textContent = `Filed: ${m.letter.subject?.slice(0, 60)} → 📁 ${m.letter.folder}`;
+    }
+  })();
 });

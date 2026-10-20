@@ -59,6 +59,14 @@ $('export-btn').onclick = () => {
   a.download = 'assistant-audit.csv';
   a.click();
 };
+$('export-json-btn').onclick = async () => {
+  const data = await api('/api/audit/export');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+  a.download = `assistant-audit-${data.exported_by}-${data.exported_at.slice(0, 10)}.json`;
+  a.click();
+  loadActivity();
+};
 $('f-apply').onclick = loadTasks;
 
 (async () => {
@@ -67,7 +75,7 @@ $('f-apply').onclick = loadTasks;
     $('who').textContent = `${me.name} (${me.emp_id})`;
     if (!me.roles.includes('auditor')) throw new Error('Only users with the auditor role can open this page.');
     $('main').hidden = false;
-    await Promise.all([loadTasks(), loadActivity(), loadHealth()]);
+    await Promise.all([loadTasks(), loadActivity(), loadHealth().catch(() => ($('health').innerHTML = ''))]);
   } catch (e: any) {
     $('denied').hidden = false;
     $('denied').textContent = e.message;

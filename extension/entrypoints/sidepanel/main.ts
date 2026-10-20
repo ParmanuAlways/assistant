@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import { runTask, type Confirmation, type PickedFile } from '../../lib/agent';
 import { act, snapshot } from '../../lib/page';
 import { api, ApiError } from '../../lib/api';
+import * as store from '../../lib/local/store';
 import { getConfig, type CommsSource } from '../../lib/config';
 import { getAccessToken, login, logout } from '../../lib/auth';
 import { describeEvent, startRecording, stopRecording, type TeachEvent } from '../../lib/teach';
@@ -747,4 +748,5 @@ async function loadPlaybooks() {
 (async () => ((await getAccessToken()) ? showSignedIn() : showSignedOut()))();
 
 // For automated tests of the page reader (tests/probe.mjs)
-(window as any).__officeAssistantDebug = { snapshot, act, targetTab };
+// and of the assistant's own storage (tests/e2e.mjs reads the audit log through these)
+(window as any).__officeAssistantDebug = { snapshot, act, targetTab, api, store };

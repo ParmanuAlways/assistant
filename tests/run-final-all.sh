@@ -6,7 +6,7 @@ start() {   # $1 = extra env for the backend
   "$ROOT/reset-data.sh"
   MMPROJ="${MMPROJ:-}" /home/user/models/serve.sh "/home/user/models/${m}-q4_k_m.gguf" || exit 1
   env $1 AGENT_TODAY="${TODAY:-2026-10-19}" AGENT_CALENDAR=1 AGENT_SCHEMA=1 DEFAULT_MODEL_URL=http://llm.office.local:9200/v1 \
-    DEFAULT_MODEL_NAME="$m" "$ROOT/start-services.sh" >/dev/null
+    export DEFAULT_MODEL_NAME="$m"; "$ROOT/start-services.sh" >/dev/null
 }
 # 1. teach the travel workflow once, then the travel task twice with it
 start ""
@@ -28,6 +28,6 @@ echo "=================== intranet regression  $(date +%T)"
 python3 "$ROOT/tests/regress.py" "$ROOT/eval-results/gemma4-e4b+fixes" "$ROOT/eval-results/final-intranet"
 pkill -x llama-server
 # 4. end-to-end test with the stand-in model
-"$ROOT/reset-data.sh"; AGENT_TODAY=2026-10-18 "$ROOT/start-services.sh" >/dev/null
+"$ROOT/reset-data.sh"; export AGENT_TODAY=2026-10-18; "$ROOT/start-services.sh" >/dev/null
 (cd "$ROOT/tests" && xvfb-run -a node e2e.mjs 2>&1 | grep -E "FAIL|checks passed" | sed 's/^/E2E /')
 echo "FINAL-ALL FINISHED $(date +%T)"
