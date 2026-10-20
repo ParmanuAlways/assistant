@@ -130,13 +130,15 @@ export async function allPlaybooks(): Promise<any[]> {
   return [...byId.values()];
 }
 
-/** Colleagues named in the request, from the company directory (a JSON list IT publishes), so the model never
- *  guesses e-mail addresses. Searches each capitalised word of the goal. */
+/** Colleagues and team mailboxes named in the request, from the company directory (a JSON list IT publishes), so the
+ *  model never guesses e-mail addresses. Capitalised words are searched anywhere in a name or address; other words
+ *  only as a whole word of a name ("the accounts team" finds "Accounts Team"). */
 export async function directoryLookup(goal: string): Promise<any[]> {
   const skip = new Set(['Send', 'Reply', 'Forward', 'Find', 'Move', 'Email', 'Apply', 'Book', 'Order', 'Register', 'Raise', 'Claim']);
   const names = [...new Set(goal.match(/\b[A-Z][a-z]{2,}\b/g) || [])].filter((w) => !skip.has(w));
+  const plain = [...new Set((goal.match(/\b[a-z]{4,}\b/g) || []))].filter((w) => !['team', 'email', 'mail', 'please', 'about', 'with', 'from', 'that', 'this'].includes(w));
   const { directoryUrl } = await getConfig();
-  if (!names.length || !directoryUrl) return [];
+  if ((!names.length && !plain.length) || !directoryUrl) return [];
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 10000);
   try {
@@ -147,6 +149,9 @@ export async function directoryLookup(goal: string): Promise<any[]> {
       for (const p of people.filter((x) => x?.email && `${x.name || ''} ${x.email}`.toLowerCase().includes(q)).slice(0, 5))
         found.set(p.email, { name: p.name || '', email: p.email });
     }
+    for (const w of plain)
+      for (const p of people.filter((x) => x?.email && (String(x.name || '').toLowerCase().split(/\s+/)).includes(w)).slice(0, 3))
+        found.set(p.email, { name: p.name || '', email: p.email });
     return [...found.values()];
   } catch {
     return [];
@@ -324,10 +329,22 @@ route('POST', '/api/tasks/:id/step', async ({ user: u, body, params }) => {
     const lastAct = [...evs].reverse().find((e) => e.event_type === 'model_action');
     if (lastAct?.payload.action?.action === 'click' && (page.text || '') === LAST_PAGE_TEXT.get(taskId) && !res.dialog)
       observed.push('the page did not change');   // (typing changes field values, not the page text)
-    if (lastAct?.payload.action?.action === 'click_xy' && (page.text || '') === LAST_PAGE_TEXT.get(taskId) && !res.dialog) {
-      // a click on a drawing that changed nothing ("Selected seat: none"): the point was a little off. Look again.
-      observed.push('the click hit nothing on the drawing (the page did not change)');
-      st.missed_xy = true;
+    if (lastAct?.payload.action?.action === 'click_xy' && !res.dialog) {
+      const target: string = st.last_target || '';
+      const shown = agent.textAdded(LAST_PAGE_TEXT.get(taskId) || '', page.text || '');
+      // something of the same shape as the target, but not it ("Selected seat: D3" when C3 was wanted)
+      const shape = target.replace(/[A-Za-z]/g, 'a').replace(/\d/g, '9');
+      const wrong = target && (shown.match(/\b[A-Za-z0-9]{1,4}\b/g) || [])
+        .find((w) => w !== target && w.replace(/[A-Za-z]/g, 'a').replace(/\d/g, '9') === shape && !new RegExp(`\\b${target}\\b`).test(shown));
+      if ((page.text || '') === LAST_PAGE_TEXT.get(taskId)) {
+        // a click on a drawing that changed nothing ("Selected seat: none"): the point was a little off. Look again.
+        observed.push('the click hit nothing on the drawing (the page did not change)');
+        st.missed_xy = true;
+      } else if (wrong) {
+        observed.push(`the click picked ${wrong}, not ${target}`);
+        st.missed_xy = true;
+        st.not_here = wrong;
+      }
     }
     if (observed.length) res.observed = observed.join('; ');
     await logEvent(u.emp_id, 'action_result', res, { task_id: taskId, url: page.url ?? null });
@@ -434,11 +451,12 @@ route('POST', '/api/tasks/:id/step', async ({ user: u, body, params }) => {
       macroAct = { action: target.tag === 'select' ? 'select' : 'type', id: target.id, value: ans, thought: `Entering the ${fix.label} you gave me.` };
   }
   const drawing = page.elements.find((e: any) => e.type === 'drawing' && e.rect);
-  if (st.missed_xy && drawing && !image && visionOk && (st.vision_tries || 0) < 3) {
+  if (st.missed_xy && drawing && visionOk && (st.vision_tries || 0) < 3) {
     st.vision_tries = (st.vision_tries || 0) + 1;
     st.vision_reason = 'drawing';
     st.zoom = 3;   // a different, closer view: the same picture would give the same answer
-    macroAct = { action: 'look', thought: 'That click missed: looking at the drawing again, closer.' };
+    // with a screenshot already here, look again right now (below); else take one first
+    if (!image) macroAct = { action: 'look', thought: 'That click missed: looking at the drawing again, closer.' };
   }
   delete st.missed_xy;
   if (image && drawing) {
@@ -447,9 +465,10 @@ route('POST', '/api/tasks/:id/step', async ({ user: u, body, params }) => {
     if (reason === 'drawing') {
       try {
         let target: string;
-        [macroAct, target] = await agent.locateInDrawing(cfg, t.prompt, image, drawing, st.last_target || '', st.zoom || 2);
+        [macroAct, target] = await agent.locateInDrawing(cfg, t.prompt, image, drawing, '', st.zoom || 2, st.not_here || '');
         await logEvent(u.emp_id, 'vision_locate', { target, action: macroAct }, { task_id: taskId });
         st.last_target = macroAct ? target : st.last_target || '';
+        delete st.not_here;
       } catch (e: any) {
         await logEvent(u.emp_id, 'model_error', { where: 'vision_locate', error: errText(e).slice(0, 200) }, { task_id: taskId });
       }
@@ -515,8 +534,9 @@ route('POST', '/api/tasks/:id/step', async ({ user: u, body, params }) => {
   // Same action on the same element of the same page; element numbers alone are reused across pages
   const sig = (a: any, el: any = null, pageUrl: any = null) => {
     el = el || {};
+    // (a click on a drawing at another point is a different step: the retry after a missed click)
     return stable({ action: a.action ?? null, value: a.value ?? null, url: a.url ?? null, fields: a.fields ?? null,
-      el: [el.tag ?? null, el.text ?? null, el.label ?? null], page: pageUrl ?? null });
+      xy: a.action === 'click_xy' ? [a.x, a.y] : null, el: [el.tag ?? null, el.text ?? null, el.label ?? null], page: pageUrl ?? null });
   };
   const recent = evs.filter((e) => e.event_type === 'model_action').slice(-2).reverse().map((r) => sig(r.payload.action, r.payload.element, r.url));
   const curSig = (a: any) => sig(a, byId.get(a.id), page.url);
@@ -706,6 +726,14 @@ route('POST', '/api/tasks/:id/step', async ({ user: u, body, params }) => {
       const e = byId.get(f.id) || {};
       return { id: f.id, label: e.label || e.text || null, kind: e.tag === 'select' ? 'select' : e.readonly ? 'pick_date' : 'type' };
     });
+  }
+  // The model gives up after something the user approved already went through (an email moved, then it got lost on
+  // the next page): that is not a failure to report as one. Say what happened and let the person check.
+  if (act.action === 'fail' && !/^(Blocked|Stopped)/.test(act.summary || '') && (await wentThrough(taskId))) {
+    const done = (await approvals(taskId)).filter(([, ok]) => ok).map(([b]) => b).pop();
+    act = { action: 'done', unverified: true, thought: act.thought || '',
+      summary: `What you approved${done ? ` ("${done}")` : ''} went through. After that I was not sure the task was finished ` +
+        `(${(act.summary || '').slice(0, 160)}); please check the page.` };
   }
   const fromWorkflow = '_macro_step' in act;
   if (wf) skills.advance(wf, act, element, fieldsInfo);

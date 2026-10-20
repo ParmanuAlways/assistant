@@ -493,7 +493,7 @@ export function parseBox(text: string): [number, number] | null {
 
 /** Two narrow questions instead of one hard one: what to click (on the whole screen), then where it is (on a
  *  close-up of the drawing). Returns [click_xy action, target] or [null, reason]. */
-export async function locateInDrawing(cfg: Cfg, goal: string, screenshotB64: string, drawing: any, avoid = '', zoom = 2): Promise<[Act | null, string]> {
+export async function locateInDrawing(cfg: Cfg, goal: string, screenshotB64: string, drawing: any, avoid = '', zoom = 2, notHere = ''): Promise<[Act | null, string]> {
   const img = (b: string) => ({ type: 'image_url', image_url: { url: `data:image/png;base64,${b.split(',').pop()}` } });
   const note = avoid ? ` It is not ${avoid}.` : '';
   const reply = await callModel(cfg, [{ role: 'user', content: [{ type: 'text', text: `${LOCATE_PROMPT}\n\nGOAL: ${goal}${note}` },
@@ -502,7 +502,7 @@ export async function locateInDrawing(cfg: Cfg, goal: string, screenshotB64: str
   const target = (m ? m[1] : (reply || '').trim()).slice(0, 60);
   if (!target) return [null, 'no target'];
   const r = drawing.rect;
-  const out = await callModel(cfg, [{ role: 'user', content: [{ type: 'text', text: `Detect "${target}". Reply with its bounding box as JSON.` },
+  const out = await callModel(cfg, [{ role: 'user', content: [{ type: 'text', text: `Detect "${target}".${notHere && notHere !== target ? ` Not "${notHere}": that one is a neighbour.` : ''} Reply with its bounding box as JSON.` },
     img(await cropPng(screenshotB64, r, zoom))] }], { json_mode: false, no_think: true });
   const c = parseBox(out);
   if (!c) return [null, `could not find ${target}`];
@@ -555,6 +555,8 @@ const pyNum = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
 /** Where each value on the form came from: the request, the profile, the user's answers, the page itself,
  *  or the assistant's own choice (flagged, so the person checks it). */
+const emailsIn = (s: string) => (String(s || '').toLowerCase().match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/g) || []);
+
 export function provenance(fields: any[], goal: string, profile: any, answers: string[], agentValues: string[], today: Date): any[] {
   const goalL = goal.toLowerCase();
   const goalDates = parseDates(goal, today);
@@ -578,6 +580,7 @@ export function provenance(fields: any[], goal: string, profile: any, answers: s
   const prof = new Map<string, string>();
   for (const [k, v] of Object.entries(flat)) if (v) prof.set(canon(v), k);
   const answered = new Set(answers.filter(Boolean).map(canon));
+  const knownEmails = new Set([goal, ...answers, ...Object.values(flat).map(String)].flatMap(emailsIn));
   const typed = new Set(agentValues.filter(Boolean).map(canon));
   const goalNorm = goalL.replace(/[^a-z0-9]+/g, ' ');
   return fields.map((f0) => {
@@ -591,6 +594,12 @@ export function provenance(fields: any[], goal: string, profile: any, answers: s
       src = 'words from your request, not the actual value';
       guess = true;
       f = { ...f, _reference: true };
+    } else if (/\b(to|cc|bcc|recipients?|e-?mail|address)\b/i.test(f.label || '') && v.length < 300 &&
+               emailsIn(v).length && emailsIn(v).some((e) => !knownEmails.has(e))) {
+      // an address that is not in the request, the profile, the directory or the user's answers: the model made it up
+      // ("accounts team@office.local"). Never send to a guessed address without the person checking it.
+      src = 'an address I could not find anywhere: please check it';
+      guess = true;
     } else if (c.startsWith('date:') && goalDates.has(c.slice(5))) src = 'from your request';
     else if (c.startsWith('num:') && goalNums.includes(num(v))) src = 'from your request';
     else if (c.startsWith('txt:') && c.slice(4) && goalNorm.includes(c.slice(4))) src = 'from your request';

@@ -87,7 +87,9 @@ def need_login(request):
 # The company directory as a static file (names and e-mails of the demo staff), so the assistant can look up a
 # colleague named in a request instead of guessing their address. In an office this is any JSON file IT publishes.
 DIRECTORY = [{"name": "Ravi Kumar", "email": "ravi@office.local"}, {"name": "Anita Desai", "email": "anita@office.local"},
-             {"name": "Priya Sharma", "email": "priya@office.local"}, {"name": "Arjun Mehta", "email": "admin1@office.local"}]
+             {"name": "Priya Sharma", "email": "priya@office.local"}, {"name": "Arjun Mehta", "email": "admin1@office.local"},
+             # team mailboxes
+             {"name": "Accounts Team", "email": "accounts@office.local"}, {"name": "IT Support", "email": "it-support@office.local"}]
 
 
 @app.get("/directory.json")

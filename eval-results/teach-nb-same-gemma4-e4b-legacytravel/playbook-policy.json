@@ -1,0 +1,52 @@
+[
+  {
+    "site": "legacy.office.local",
+    "task": "Raise a travel request in the Legacy ERP",
+    "steps": "Start URL: http://intranet.office.local:8300/\n1. Click link \"Legacy ERP\".\n2. Click link \"Travel Request\" in the \"Requests\" menu.\n3. Type <destination city> into field \"Destination city\".\n4. Click button \"Pick from date\".\n5. Click button \">\" in the table row \"< October 2026 >\".\n6. Click button \"4\" in the table row \"1 2 3 4 5 6 7\".\n7. Pick the date \"<start date>\" for \"From date\" in the calendar.\n8. Click button \"Pick to date\".\n9. Click button \">\" in the table row \"< November 2026 >\".\n10. Click button \"6\" in the table row \"6 7 8 9 10 11 12\".\n11. Choose \"<purpose>\" for \"Purpose\".\n12. Pick the date \"<end date>\" for \"To date\" in the calendar.",
+    "macro": [
+      {
+        "action": "navigate",
+        "url": "http://intranet.office.local:8300/",
+        "host": "intranet.office.local"
+      },
+      {
+        "action": "click",
+        "text": "Legacy ERP",
+        "menu": null,
+        "param": false
+      },
+      {
+        "action": "click",
+        "text": "Travel Request",
+        "menu": "Requests",
+        "param": false
+      },
+      {
+        "action": "type",
+        "label": "Destination city",
+        "param": true
+      },
+      {
+        "action": "pick_date",
+        "label": "From date",
+        "param": true
+      },
+      {
+        "action": "select",
+        "label": "Purpose",
+        "param": true
+      },
+      {
+        "action": "pick_date",
+        "label": "To date",
+        "param": true
+      },
+      {
+        "action": "click",
+        "text": "Submit",
+        "menu": null,
+        "param": false
+      }
+    ]
+  }
+]

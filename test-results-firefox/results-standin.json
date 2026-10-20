@@ -30,9 +30,9 @@
     "detail": "\u2705 Connected (6 ms) \u00b7 structured output: JSON schema \u00b7 system role: yes"
   },
   {
-    "name": "Agent task completed in Firefox (76s)",
+    "name": "Agent task completed in Firefox (78s)",
     "ok": true,
-    "detail": "ave Request\u201d\n\u2713\nWorked \u00b7 1 step\n21s\n\u25be\n\u2705 Done\nLeave request LR-1013 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
+    "detail": "ave Request\u201d\n\u2713\nWorked \u00b7 1 step\n21s\n\u25be\n\u2705 Done\nLeave request LR-1006 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
   },
   {
     "name": "Assistant asked for missing details and asked for confirmation",
@@ -42,7 +42,7 @@
   {
     "name": "Leave really saved with the right details",
     "ok": true,
-    "detail": "{\"id\": 13, \"ref\": \"LR-1013\", \"username\": \"ravi\", \"emp_id\": \"EMP1042\", \"leave_type\": \"Casual Leave\", \"from_date\": \"2026-10-19\", \"to_date\": \"2026-10-21\", \"days\": 3, \"reason\": \"family function\", \"emergency_contact\": \"9123456780\", \"manager\": \"Priya Sharma\", \"status\": \"Pending\", \"created_at\": \"2026-10-20"
+    "detail": "{\"id\": 6, \"ref\": \"LR-1006\", \"username\": \"ravi\", \"emp_id\": \"EMP1042\", \"leave_type\": \"Casual Leave\", \"from_date\": \"2026-10-19\", \"to_date\": \"2026-10-21\", \"days\": 3, \"reason\": \"family function\", \"emergency_contact\": \"9123456780\", \"manager\": \"Priya Sharma\", \"status\": \"Pending\", \"created_at\": \"2026-10-20 "
   },
   {
     "name": "History timeline with audit events",
@@ -57,7 +57,7 @@
   {
     "name": "Teach mode records clicks and pages in Firefox",
     "ok": true,
-    "detail": "Opened \"Submitted \u2013 HR Portal\" (http://hr.office.local:8200/leave/success/LR-1013) | Opened \"Home \u2013 HR Portal\" (http://hr.office.local:8200/) | Clicked link \"My Leaves\" | Opened \"My Leaves \u2013 HR Portal\" (http://hr.office.local:8200/leaves)"
+    "detail": "Opened \"Submitted \u2013 HR Portal\" (http://hr.office.local:8200/leave/success/LR-1006) | Opened \"Home \u2013 HR Portal\" (http://hr.office.local:8200/) | Clicked link \"My Leaves\" | Opened \"My Leaves \u2013 HR Portal\" (http://hr.office.local:8200/leaves)"
   },
   {
     "name": "Sign-out clears the session",

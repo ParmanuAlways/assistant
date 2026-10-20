@@ -37,6 +37,8 @@ pip install fastapi uvicorn python-multipart itsdangerous reportlab   # only for
 cd extension && npm install && npm run build   # → .output/chrome-mv3 (load unpacked in chrome://extensions)
 for t in ../tests/local/*.test.ts; do ../tests/local/run.sh $t; done   # unit tests (Node)
 cd ../tests && npm install && xvfb-run -a node e2e.mjs
+# everything: ./start-test-stack.sh (demo sites + mail), ./run-fast-suite.sh (all browser tests, no model),
+# ./run-nobackend-model.sh (the real-model tasks; needs a model in /home/user/models)
 ```
 
 Demo users: `ravi / ravi123` (user), `anita / anita123` (auditor), `admin1 / admin123` (admin).

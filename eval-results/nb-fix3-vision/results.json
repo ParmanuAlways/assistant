@@ -1,0 +1,79 @@
+{
+  "label": "nb-fix3-vision",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "V1-seat#1",
+      "site": "Legacy: seat map on a canvas (needs a screenshot)",
+      "goal": "In the Legacy ERP, book seat C3 on the seat map.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/1",
+      "field_ratio": 0,
+      "fields": {
+        "seat": {
+          "got": null,
+          "want": "C3"
+        }
+      },
+      "seconds": 291,
+      "steps": 6,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "' in the 'nav' (👆Click “Seat Booking”💭Taking a screenshot to see the page.💭Clicking \"C3\" in the drawing (found on the screenshot at 432,305).🎯Click at 432,305 on the screen!Stopped: the assistant kept repeating the same step.❌ I couldn’t finishStopped: the assistant kept repeating the same step."
+    },
+    {
+      "task": "V1-seat#2",
+      "site": "Legacy: seat map on a canvas (needs a screenshot)",
+      "goal": "In the Legacy ERP, book seat C3 on the seat map.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "1/1",
+      "field_ratio": 1,
+      "fields": {
+        "seat": {
+          "got": "C3",
+          "want": "C3",
+          "ok": true
+        }
+      },
+      "seconds": 244,
+      "steps": 8,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "ain frame. I'veYes, submit “Book seat”✓Worked · 1 step25s▾👆Click “Book seat”💭The goal was to book seat C3 on the seat map in the Legacy ERP. The previous steps successfully navigated to the seat booking page, selected C3, and submitted a✅ DoneSeat C3 has been successfully booked in the Legacy ERP."
+    }
+  ]
+}

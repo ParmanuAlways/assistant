@@ -426,3 +426,58 @@ What changed in behaviour:
   a server-side Keycloak admin search.
 - Not re-measured after the move: the real-model (Gemma) evaluations of Parts 1–4. The prompts, checks and
   decisions were ported unchanged and the unit checks pin them, but results with a real model have not been re-run.
+
+
+# Part 7 — Every feature again, with no server (20 Oct)
+
+All the features built so far, re-tested on the browser-only version: the browser tests with the stand-in model,
+then the real model (Gemma 4 E4B, llama.cpp on 4 CPU cores) on every real-model task, each compared with the run
+before the move (Parts 1–5). Bugs found were fixed and the tasks run again until they passed.
+How to run it all: `tests/start-test-stack.sh`, `tests/run-fast-suite.sh`, `tests/run-nobackend-model.sh`.
+
+**Without a model (stand-in), final build:**
+
+| Feature | Test | Result |
+|---|---|---|
+| Logic: agent loop, checks before submit, workflows, model calls, comms search, letters, storage, audit chain | `tests/local/*.test.ts` (Node) | 116/116 |
+| Sign-in, profile, settings and policy, leave tasks, learning, declining, history, model fallback, verifier, no passwords stored, auditor, tamper detection | `e2e.mjs` | 41/41 |
+| Hard web pages: frames, hover menus, date pickers, autocomplete, pop-up lookup, Shadow DOM rows, native dialogs, upload, suggestion pick | `probe.mjs` | 7/7 |
+| Letters: e-Office downloads filed per sender, replies, Draft all, File my downloads | `letters-shots.mjs` | 14/14 |
+| Comms: Sent/Received, folders, plain-words search, chat search, chat falls back to the browser | `comms-shots.mjs` | 8/8 |
+| Panel: home screen, saved apps, apps open natively, page glow, questions, review card with sources, personalised home, history, My details | `ui-shots.mjs` | 9/9 |
+| Teach: record, save, active | `teach.mjs` | passed |
+| Firefox | `firefox_e2e.py` | 14/14 |
+
+**With the real model (Gemma 4 E4B):**
+
+| Task | Before the move | First run without server | After the fixes |
+|---|---|---|---|
+| 7 intranet tasks | 7/7 | 6/7 (visitors) | 7/7 (visitors re-run: asked for the ID proof, 8/8 fields) |
+| Legacy ERP, each task twice (learning) | 10/10 | 8/10 (purchase ×2) | 10/10 (purchase ×2 re-run, 2nd run replays learned steps) |
+| Teach once, then travel twice | 2/2 | 2/2, taught steps not used (other browser) | 2/2 using the taught playbook in the same browser; 1/1 with it shared through policy to another browser |
+| Seat map on a canvas (vision) ×2 | 2/2 | 0/2 | 2/2 (both times the first click missed and the closer second look hit C3) |
+| Webmail: send, find, reply, archive (prompt-injection email), forward | 4/5 | 0/5 | 5/5 done right (forward used the directory address; the injection was ignored every time) |
+
+**Bugs found and fixed** (each has a unit check):
+1. *The page glow cost a CPU core.* An animated full-page glow repaints the page every frame; without a graphics card that
+   kept a core busy and slowed the model ~6× (1 instead of 6 tokens/s). The glow and the panel are now still.
+2. *Required radio buttons.* "ID proof" (Aadhaar / PAN…) left empty made the assistant give up; now it asks, with the choices.
+3. *Suggestions and lookup boxes.* Typing that shows exactly one matching suggestion picks it; typing into a read-only box
+   with a "Lookup…" button presses the button.
+4. *Clicks on drawings.* A click that hits nothing, or picks a neighbour (D3 for C3), is located again at once, closer,
+   with "not D3"; the repeat guard no longer takes that second click (another point) for the same step.
+5. *Colleagues' addresses.* An address from the company directory was shown as "your own profile e-mail" and flagged.
+6. *Chat search hijacked tasks.* "Find the email from IT about the VPN" was answered from the Comms index (nothing found)
+   instead of looking in the webmail; now the index answers only when it really has it.
+7. *Guessed e-mail addresses.* "the accounts team" was guessed as "team@office.local"; teams are now found in the directory
+   and any recipient address that is not in the request, profile or directory is flagged for the person to check.
+8. *"Failed" after it worked.* When an approved action went through and the model then lost its way (webmail shows no
+   success message), it reported a failure; now it says what went through and asks the person to check.
+
+Items 2, 3, 5 and 7 were in the Python version too (it passed those tasks when the model happened to do the right
+thing); 1 and 6 came with the newer panel and Comms features; 4's repeat-guard gap was always there but only showed
+once clicks on drawings were retried.
+
+**Still to note.** Webmail shows no confirmation after sending or moving, so the model sometimes starts the same action
+again; the "you already approved this" warning stops a second send (it did, in the forward task). One model, one
+machine, one or two runs per task: these are spot checks, not statistics.

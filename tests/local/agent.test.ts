@@ -140,6 +140,14 @@ check('provenance: a colleague from the directory is labelled so, and not flagge
 check('verifier: no "your profile" warning for a colleague\'s address',
   !agent.verifySubmission('Email Priya that I am on leave', pv, T).some((x: string) => /your .* from your profile/.test(x)));
 
+// an address nobody gave: flagged for the person to check
+const pgu = agent.provenance([{ label: 'To', value: 'accounts <team@office.local>,' }], 'Forward the Acme Supplies invoice email to the accounts team.',
+  { email: 'ravi@office.local', colleagues_from_company_directory: [{ name: 'Accounts Team', email: 'accounts@office.local' }] }, [], [], T);
+check('provenance: a made-up address is flagged', pgu[0].guess === true && /could not find/.test(pgu[0].source), pgu);
+const pk = agent.provenance([{ label: 'To', value: 'accounts@office.local' }], 'Forward the invoice to the accounts team.',
+  { colleagues_from_company_directory: [{ name: 'Accounts Team', email: 'accounts@office.local' }] }, [], [], T);
+check('provenance: the directory address is not flagged', !pk[0].guess, pk);
+
 // ---- a fake OpenAI-compatible model server
 const seen: any[] = [];
 let queue: any[] = [];
@@ -196,6 +204,32 @@ check('audit: every step recorded in order', eq(types.filter((x) => ['user_messa
   ['user_message', 'plan', 'model_action', 'confirmation', 'action_result', 'model_action', 'task_finished']), types);
 check('audit: chain intact', (await verifyChain()).ok);
 check('outcome recorded for playbook health', (await store.get('outcomes', t1))?.status === 'completed');
+
+// the directory: a team named in lower case is found too
+const dir = http.createServer((req, res) => { res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify([{ name: 'Priya Sharma', email: 'priya@office.local' }, { name: 'Accounts Team', email: 'accounts@office.local' }])); });
+await new Promise<void>((ok) => dir.listen(0, '127.0.0.1', ok));
+setDevConfig({ models: [{ id: 1, name: 'Fake', url: URL_, model: 'fake', default: true }], agent: { today: '2026-10-19' },
+  directoryUrl: `http://127.0.0.1:${(dir.address() as any).port}/directory.json` });
+const { directoryLookup } = await import('../../extension/lib/local/routes/tasks');
+const people = await directoryLookup('Forward the Acme Supplies invoice email to the accounts team.');
+check('directory: "the accounts team" finds Accounts Team', people.some((p: any) => p.email === 'accounts@office.local') && people.length === 1, people);
+check('directory: a capitalised name is found', (await directoryLookup('Send an email to Priya about leave')).some((p: any) => p.email === 'priya@office.local'));
+setDevConfig({ models: [{ id: 1, name: 'Fake', url: URL_, model: 'fake', default: true }], agent: { today: '2026-10-19' } });
+dir.close();
+
+// the model gives up after an approved action went through: reported as "went through, please check", not a failure
+const { task_id: t7 } = await api('/api/tasks', 'POST', { prompt: 'Apply casual leave, reason: family function', url: form.url });
+queue = [{ action: 'click', id: 2, thought: 'Submit the form' }];
+r = await api(`/api/tasks/${t7}/step`, 'POST', { page: form });
+await api(`/api/tasks/${t7}/events`, 'POST', { event_type: 'confirmation', payload: { approved: true, button: 'Submit', fields: r.confirmation.fields } });
+queue = [{ action: 'fail', summary: 'I am not on the right page', thought: 'lost' }, { action: 'fail', summary: 'I am not on the right page', thought: 'lost' }];
+r = await api(`/api/tasks/${t7}/step`, 'POST', { page: { ...form, text: 'Inbox', elements: [{ id: 5, tag: 'a', text: 'Inbox' }] }, last_result: { ok: true, detail: 'clicked' } });
+check('after an approved action went through, giving up is reported as "please check"', r.action.action === 'done' && r.action.unverified
+  && /went through/.test(r.action.summary) && (await store.get('tasks', t7)).status === 'unverified', r.action);
+const body = agent.provenance([{ label: 'Message Body', value: 'From: Acme Billing <billing@acme-supplies.com> Dear customer, invoice INV-7781' }],
+  'Forward the invoice to accounts', {}, [], [], T);
+check('provenance: addresses inside a message body are not checked as recipients', !body[0].guess, body);
 
 // a site outside the allowed list
 const { task_id: t2 } = await api('/api/tasks', 'POST', { prompt: 'Order lunch', url: form.url });

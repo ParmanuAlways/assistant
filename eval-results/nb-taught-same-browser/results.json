@@ -1,0 +1,110 @@
+{
+  "label": "nb-taught-same-browser",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "L1-travel#1",
+      "site": "Legacy: travel (frames, hover menu, calendar, postback+confirm)",
+      "goal": "In the Legacy ERP, raise a travel request to Pune from 21 Oct 2026 to 23 Oct 2026 for a client visit.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "4/4",
+      "field_ratio": 1,
+      "fields": {
+        "destination": {
+          "got": "Pune",
+          "want": "Pune",
+          "ok": true
+        },
+        "from_date": {
+          "got": "2026-10-21",
+          "want": "2026-10-21",
+          "ok": true
+        },
+        "to_date": {
+          "got": "2026-10-23",
+          "want": "2026-10-23",
+          "ok": true
+        },
+        "purpose": {
+          "got": "Client visit",
+          "want": "Client visit",
+          "ok": true
+        }
+      },
+      "seconds": 296,
+      "steps": 9,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": "playbook:1000",
+      "replayed_steps": 3,
+      "verifier_mismatches": [],
+      "summary": " step49s▾👆Click “Submit”💭The goal was to raise a travel request. The previous step resulted in a confirmation message: 'Travel request TR-3001 submitted for approval.' This indicates a ✅ DoneTravel request TR-3001 was successfully raised for Pune from 21 Oct 2026 to 23 Oct 2026 for a client visit."
+    },
+    {
+      "task": "L1-travel#2",
+      "site": "Legacy: travel (frames, hover menu, calendar, postback+confirm)",
+      "goal": "In the Legacy ERP, raise a travel request to Pune from 21 Oct 2026 to 23 Oct 2026 for a client visit.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "4/4",
+      "field_ratio": 1,
+      "fields": {
+        "destination": {
+          "got": "Pune",
+          "want": "Pune",
+          "ok": true
+        },
+        "from_date": {
+          "got": "2026-10-21",
+          "want": "2026-10-21",
+          "ok": true
+        },
+        "to_date": {
+          "got": "2026-10-23",
+          "want": "2026-10-23",
+          "ok": true
+        },
+        "purpose": {
+          "got": "Client visit",
+          "want": "Client visit",
+          "ok": true
+        }
+      },
+      "seconds": 263,
+      "steps": 9,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": "playbook:1000",
+      "replayed_steps": 3,
+      "verifier_mismatches": [],
+      "summary": " step51s▾👆Click “Submit”💭The goal was to raise a travel request to Pune from 21 Oct 2026 to 23 Oct 2026 for a client visit. The previous step resulted in a confirmation message: 'Travel✅ DoneTravel request TR-3001 was successfully raised for Pune from 21 Oct 2026 to 23 Oct 2026 for a client visit."
+    }
+  ]
+}

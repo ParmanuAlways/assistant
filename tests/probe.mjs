@@ -7,7 +7,9 @@ const EXT = `${ROOT}/extension/.output/chrome-mv3`;
 const L = 'http://legacy.office.local:8500';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 await fetch(`${L}/debug/reset`, { method: 'POST' });
-const ctx = await chromium.launchPersistentContext('/tmp/claude-0/probe-profile', {
+const PROFILE = '/tmp/claude-0/probe-profile';
+(await import('node:fs')).rmSync(PROFILE, { recursive: true, force: true });   // no sign-in left over from an earlier run
+const ctx = await chromium.launchPersistentContext(PROFILE, {
   headless: false, executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`], viewport: { width: 1100, height: 900 },
 });

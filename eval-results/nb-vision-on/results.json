@@ -1,0 +1,78 @@
+{
+  "label": "nb-vision-on",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "V1-seat#1",
+      "site": "Legacy: seat map on a canvas (needs a screenshot)",
+      "goal": "In the Legacy ERP, book seat C3 on the seat map.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/1",
+      "field_ratio": 0,
+      "fields": {
+        "seat": {
+          "got": null,
+          "want": "C3"
+        }
+      },
+      "seconds": 327,
+      "steps": 9,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "al is to book seat C3 on the seat map in the Legacy ERP. I am currently on the main page of the Legacy ERP. I see a 'Seat Booking' link [7] in the 'nav' (👆Click “Seat Booking”!Stopped: the assistant kept repeating the same step.❌ I couldn’t finishStopped: the assistant kept repeating the same step."
+    },
+    {
+      "task": "V1-seat#2",
+      "site": "Legacy: seat map on a canvas (needs a screenshot)",
+      "goal": "In the Legacy ERP, book seat C3 on the seat map.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/1",
+      "field_ratio": 0,
+      "fields": {
+        "seat": {
+          "got": null,
+          "want": "C3"
+        }
+      },
+      "seconds": 245,
+      "steps": 9,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "al is to book seat C3 on the seat map in the Legacy ERP. I am currently on the main page of the Legacy ERP. I see a link [7] 'Seat Booking' in the 'nav' (👆Click “Seat Booking”!Stopped: the assistant kept repeating the same step.❌ I couldn’t finishStopped: the assistant kept repeating the same step."
+    }
+  ]
+}

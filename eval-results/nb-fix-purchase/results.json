@@ -1,0 +1,120 @@
+{
+  "label": "nb-fix-purchase",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "L2-purchase#1",
+      "site": "Legacy: purchase (autocomplete, pop-up lookup, masked price, alert)",
+      "goal": "In the Legacy ERP, create a purchase request for 2 ergonomic chairs at 8,500 rupees each, cost centre Engineering - Bangalore, approver Priya Sharma.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "5/5",
+      "field_ratio": 1,
+      "fields": {
+        "item": {
+          "got": "ergonomic chairs",
+          "want": "chair",
+          "ok": true
+        },
+        "qty": {
+          "got": "2",
+          "want": "2",
+          "ok": true
+        },
+        "price": {
+          "got": "8500",
+          "want": "8500",
+          "ok": true
+        },
+        "cost_centre": {
+          "got": "CC-110",
+          "want": "CC-110",
+          "ok": true
+        },
+        "approver": {
+          "got": "EMP0900",
+          "want": "EMP0900",
+          "ok": true
+        }
+      },
+      "seconds": 385,
+      "steps": 11,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "ation message: 'Purchase request PR-4001 created and sent for approval.' This fulfills the user's goal.✅ DoneThe purchase request PR-4001 for 2 ergonomic chairs at 8,500 rupees each, cost centre Engineering - Bangalore, with approver Priya Sharma, has been successfully created and sent for approval."
+    },
+    {
+      "task": "L2-purchase#2",
+      "site": "Legacy: purchase (autocomplete, pop-up lookup, masked price, alert)",
+      "goal": "In the Legacy ERP, create a purchase request for 2 ergonomic chairs at 8,500 rupees each, cost centre Engineering - Bangalore, approver Priya Sharma.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "5/5",
+      "field_ratio": 1,
+      "fields": {
+        "item": {
+          "got": "2 ergonomic chairs",
+          "want": "chair",
+          "ok": true
+        },
+        "qty": {
+          "got": "2",
+          "want": "2",
+          "ok": true
+        },
+        "price": {
+          "got": "8500",
+          "want": "8500",
+          "ok": true
+        },
+        "cost_centre": {
+          "got": "CC-110",
+          "want": "CC-110",
+          "ok": true
+        },
+        "approver": {
+          "got": "EMP0900",
+          "want": "EMP0900",
+          "ok": true
+        }
+      },
+      "seconds": 270,
+      "steps": 11,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": "experience:1",
+      "replayed_steps": 4,
+      "verifier_mismatches": [],
+      "summary": " request. The previous step resulted in a confirmation message: 'Purchase request PR-4001 created and sent for approval.' This,✅ DoneThe purchase request PR-4001 for 2 ergonomic chairs at 8,500 rupees each, cost centre Engineering - Bangalore, and approver Priya Sharma has been successfully created."
+    }
+  ]
+}

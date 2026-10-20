@@ -1,0 +1,35 @@
+{
+  "label": "nb-gemma4-e4b-legacytravel",
+  "demo": "legacytravel",
+  "recorded": [
+    "Opened \"Intranet – intranet\" (http://intranet.office.local:8300/)",
+    "Clicked link \"Legacy ERP\"",
+    "Opened \"Sign in - Legacy ERP\" (http://legacy.office.local:8500/login?next=/)",
+    "Typed \"ravi\" into \"User name\"",
+    "Typed \"(hidden)\" into \"Password\"",
+    "Clicked button \"Sign in\"",
+    "Opened \"Legacy ERP\" (http://legacy.office.local:8500/)",
+    "Clicked link \"Travel Request\" in menu \"Requests\"",
+    "Opened \"Legacy ERP\" (http://legacy.office.local:8500/)",
+    "Typed \"Mumbai\" into \"Destination city\"",
+    "Clicked button \"Pick from date\"",
+    "Clicked button \">\" in row \"< October 2026 >\"",
+    "Clicked button \"4\" in row \"1 2 3 4 5 6 7\"",
+    "Picked date \"04-Nov-2026\" for \"From date\"",
+    "Clicked button \"Pick to date\"",
+    "Clicked button \">\" in row \"< November 2026 >\"",
+    "Clicked button \"6\" in row \"6 7 8 9 10 11 12\"",
+    "Chose \"Training\" for \"Purpose\"",
+    "Picked date \"06-Dec-2026\" for \"To date\"",
+    "Clicked link \"Submit\"",
+    "Opened \"Legacy ERP\" (http://legacy.office.local:8500/)"
+  ],
+  "draft": "Start URL: http://intranet.office.local:8300/\n1. Click link \"Legacy ERP\".\n2. Click link \"Travel Request\" in the \"Requests\" menu.\n3. Type <destination city> into field \"Destination city\".\n4. Click button \"Pick from date\".\n5. Click button \">\" in the table row \"< October 2026 >\".\n6. Click button \"4\" in the table row \"1 2 3 4 5 6 7\".\n7. Pick the date \"<start date>\" for \"From date\" in the calendar.\n8. Click button \"Pick to date\".\n9. Click button \">\" in the table row \"< November 2026 >\".\n10. Click button \"6\" in the table row \"6 7 8 9 10 11 12\".\n11. Choose \"<purpose>\" for \"Purpose\".\n12. Pick the date \"<end date>\" for \"To date\" in the calendar.",
+  "quality": {
+    "has_start_url": true,
+    "steps": 12,
+    "copied_demo_values": []
+  },
+  "saved_status": "✅ Playbook saved and active.",
+  "active": true
+}
