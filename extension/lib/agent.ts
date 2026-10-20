@@ -1,7 +1,7 @@
 // The agent loop: read page -> ask backend (which asks the model and logs everything) -> act.
 import { browser, type Browser } from 'wxt/browser';
 import { api } from './api';
-import { act, ActionResult, endTask, forBackend, PageSnapshot, snapshot } from './page';
+import { act, ActionResult, endTask, forBackend, PageSnapshot, showWorking, snapshot } from './page';
 
 export interface AgentAction {
   action: 'click' | 'type' | 'select' | 'navigate' | 'ask_user' | 'done' | 'fail' | 'hover' | 'pick_date' | 'autocomplete'
@@ -107,6 +107,7 @@ async function markedScreenshot(tab: Browser.tabs.Tab, page: PageSnapshot): Prom
     await browser.scripting.executeScript({ target: { tabId: tab.id!, frameIds: [frameId] }, func: markInPage, args: [marks] })
       .catch(() => {});
   }
+  await showWorking(tab.id!, null);   // the model should see the page, not our overlay
   await sleep(100);
   const shot = await screenshot(tab);
   await browser.scripting.executeScript({ target: { tabId: tab.id!, allFrames: true }, func: clearMarksInPage }).catch(() => {});
@@ -137,18 +138,24 @@ function clickAtInPage(x: number, y: number) {
   return { ok: true, detail: `clicked at ${x},${y} (${el.tagName.toLowerCase()} "${(el.innerText || '').trim().slice(0, 40)}")` };
 }
 
-function describe(a: AgentAction): string {
+// What the user sees for each step: names from the page, not element numbers
+function describe(a: AgentAction, page?: PageSnapshot): string {
+  const name = (id?: number) => {
+    const el = page?.elements.find((e) => e.id === id);
+    const n = (el?.label || el?.text || '').trim();
+    return n ? `“${n.length > 40 ? n.slice(0, 40) + '…' : n}”` : id !== undefined ? `item ${id}` : '';
+  };
   switch (a.action) {
-    case 'click': return `Click element [${a.id}]`;
-    case 'type': return `Type "${a.value}" into [${a.id}]`;
-    case 'select': return `Choose "${a.value}" in [${a.id}]`;
+    case 'click': return `Click ${name(a.id)}`;
+    case 'type': return `Type “${a.value}” into ${name(a.id)}`;
+    case 'select': return `Choose “${a.value}” for ${name(a.id)}`;
     case 'navigate': return `Open ${a.url}`;
-    case 'hover': return `Point at [${a.id}]`;
-    case 'pick_date': return `Pick date ${a.value} for [${a.id}]`;
-    case 'autocomplete': return `Type "${a.value}" into [${a.id}] and pick the suggestion`;
-    case 'fill_form': return `Fill ${a.fields?.length || 0} fields: ` + (a.fields || []).map((f) => `[${f.id}]="${f.value}"`).join(', ');
-    case 'upload': return `Attach a file to [${a.id}]`;
-    case 'click_xy': return `Click at ${a.x},${a.y} (from the screenshot)`;
+    case 'hover': return `Open the menu ${name(a.id)}`;
+    case 'pick_date': return `Pick ${a.value} for ${name(a.id)}`;
+    case 'autocomplete': return `Find “${a.value}” in ${name(a.id)}`;
+    case 'fill_form': return `Fill in ${(a.fields || []).map((f) => `${name(f.id)} = “${f.value}”`).join(', ')}`;
+    case 'upload': return `Attach a file to ${name(a.id)}`;
+    case 'click_xy': return `Click at ${a.x},${a.y} on the screen`;
     default: return a.action;
   }
 }
@@ -215,6 +222,7 @@ export async function runTask(prompt: string, ui: AgentUI): Promise<{ status: st
       await waitForLoad(tabId);
       const page = await snapshot(tabId);
       if (tabId !== mainTabId) page.popup = true;
+      showWorking(tabId, 'thinking about the next step…');
       const body: any = { page: forBackend(page), last_result: lastResult, user_answer: answer };
       if (wantShot) body.screenshot_b64 = await markedScreenshot(tab!, page);
       const res = await api(`/api/tasks/${taskId}/step`, 'POST', body);
@@ -236,6 +244,7 @@ export async function runTask(prompt: string, ui: AgentUI): Promise<{ status: st
       }
 
       if (a.action === 'ask_user') {
+        showWorking(tabId, 'waiting for your answer in the side panel');
         const isUserAction = a.field === 'user_action';
         const reply = await ui.ask(a.question || 'Please answer', a.options, isUserAction);
         if (reply === null) {
@@ -251,7 +260,7 @@ export async function runTask(prompt: string, ui: AgentUI): Promise<{ status: st
       }
 
       if (a.action === 'navigate') {
-        ui.step(describe(a), 'action');
+        ui.step(describe(a, page), 'action');
         await browser.tabs.update(tabId, { url: a.url });
         lastResult = { ok: true, detail: `navigated to ${a.url}` };
         continue;
@@ -259,13 +268,15 @@ export async function runTask(prompt: string, ui: AgentUI): Promise<{ status: st
 
       let approved = false;
       if (res.needs_confirmation) {
+        showWorking(tabId, 'waiting for your OK in the side panel');
         if (!(await askApproval(res.confirmation as Confirmation, page.url))) {
           return finish({ status: 'cancelled', summary: 'User declined the final submit', taskId });
         }
         submitted = approved = true;
       }
 
-      ui.step(describe(a), 'action');
+      ui.step(describe(a, page), 'action');
+      await showWorking(tabId, describe(a, page));
       lastActAt = Date.now();
       if (a.action === 'upload') {
         const file = await ui.askFile(a.question || 'Which file should I attach?');

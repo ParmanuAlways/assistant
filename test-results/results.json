@@ -7,7 +7,7 @@
   {
     "name": "Keycloak sign-in in the extension shows the user",
     "ok": true,
-    "detail": "Hello, Ravi Kumar (EMP1042)"
+    "detail": "Ravi Kumar EMP1042"
   },
   {
     "name": "Normal user does not see the Audit button",
@@ -37,7 +37,7 @@
   {
     "name": "Test connection to the model works",
     "ok": true,
-    "detail": "✅ Connected (119 ms) · structured output: JSON schema · system role: yes"
+    "detail": "✅ Connected (123 ms) · structured output: JSON schema · system role: yes"
   },
   {
     "name": "Server rejects a custom endpoint when policy forbids it",
@@ -57,7 +57,7 @@
   {
     "name": "Task 1 completed",
     "ok": true,
-    "detail": "ess.Leave request LR-1001 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
+    "detail": "DoneLeave request LR-1001 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
   },
   {
     "name": "Assistant asked for the missing emergency contact (and nothing else it already knew)",
@@ -77,7 +77,7 @@
   {
     "name": "Leave really saved in the portal with correct details",
     "ok": true,
-    "detail": "{\"id\":1,\"ref\":\"LR-1001\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Casual Leave\",\"from_date\":\"2026-10-19\",\"to_date\":\"2026-10-21\",\"days\":3,\"reason\":\"family function\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 02:53:47\"}"
+    "detail": "{\"id\":1,\"ref\":\"LR-1001\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Casual Leave\",\"from_date\":\"2026-10-19\",\"to_date\":\"2026-10-21\",\"days\":3,\"reason\":\"family function\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 05:22:26\"}"
   },
   {
     "name": "Panel shows the leave reference to the user",
@@ -97,7 +97,7 @@
   {
     "name": "Task 2 saved correctly",
     "ok": true,
-    "detail": "{\"id\":2,\"ref\":\"LR-1002\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Sick Leave\",\"from_date\":\"2026-11-02\",\"to_date\":\"2026-11-02\",\"days\":1,\"reason\":\"medical checkup\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 02:54:04\"}"
+    "detail": "{\"id\":2,\"ref\":\"LR-1002\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Sick Leave\",\"from_date\":\"2026-11-02\",\"to_date\":\"2026-11-02\",\"days\":1,\"reason\":\"medical checkup\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 05:22:43\"}"
   },
   {
     "name": "Declining the confirmation stops the task and submits nothing",
@@ -197,6 +197,6 @@
   {
     "name": "Integrity check detects a tampered record",
     "ok": true,
-    "detail": "✖ TAMPERING DETECTED at event #27 (user_answer, task 236c021e-836b-439a-8068-5827d168885d, step 26) after 26 valid events"
+    "detail": "✖ TAMPERING DETECTED at event #27 (user_answer, task 285427d0-e23e-4245-b291-7b09bfcbf62b, step 26) after 26 valid events"
   }
 ]

@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="../sidepanel/style.css" />
     <style>
       body { max-width: 1100px; margin: 0 auto; }
+      section { padding: 20px; }
+      section > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+      h2 { font-size: 15px; margin-top: 22px; }
+      table { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; border-collapse: separate; border-spacing: 0; overflow: hidden; }
+      .filters { margin: 12px 0; }
       .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
       .filters > * { flex: 1; min-width: 140px; }
       #tasks tr { cursor: pointer; }

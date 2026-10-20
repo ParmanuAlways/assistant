@@ -7,115 +7,197 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <section id="signed-out" class="center">
+    <!-- ------------------------------------------------------------ signed out -->
+    <section id="signed-out" class="welcome-screen">
+      <div class="hero-mark"><span class="mark xl glow"></span></div>
       <h1>Office Assistant</h1>
-      <p>Works on your intranet sites. Everything stays inside the office network.</p>
-      <button id="login-btn" class="primary">Sign in with company account</button>
+      <p class="lead">Tell it what you need. It works the intranet sites for you, right here in your browser.</p>
+      <ul class="promises">
+        <li><span class="pi">🏢</span><div><b>Stays in the office</b><span class="muted">Runs on your company's own AI server. Nothing goes to the internet.</span></div></li>
+        <li><span class="pi">✋</span><div><b>You stay in charge</b><span class="muted">It asks before it submits anything and never types your passwords.</span></div></li>
+        <li><span class="pi">🧾</span><div><b>Every step is recorded</b><span class="muted">A tamper-proof history for you and your auditors.</span></div></li>
+      </ul>
+      <button id="login-btn" class="primary wide">Sign in with company account</button>
       <p id="login-error" class="error"></p>
     </section>
 
+    <!-- ------------------------------------------------------------ signed in -->
     <section id="signed-in" hidden>
-      <header>
-        <div>
-          <strong id="user-name"></strong> <span id="user-emp" class="muted"></span>
-          <div id="user-roles" class="muted small"></div>
+      <header class="topbar">
+        <div class="brand">
+          <span class="mark"></span>
+          <div>
+            <div class="brand-name">Office Assistant</div>
+            <div class="status"><span class="dot"></span><span id="model-status">On-prem AI</span></div>
+          </div>
         </div>
-        <div>
-          <button id="audit-btn" class="link" hidden>Audit</button>
-          <button id="logout-btn" class="link">Sign out</button>
+        <div class="me">
+          <div class="me-text">
+            <div id="user-name"></div>
+            <div class="tiny muted"><span id="user-emp"></span> <span id="user-roles"></span></div>
+          </div>
+          <span id="avatar" class="avatar"></span>
+          <button id="audit-btn" class="icon-btn ghost" title="Audit dashboard" hidden><i class="ic ic-shield"></i></button>
+          <button id="logout-btn" class="icon-btn ghost" title="Sign out"><i class="ic ic-exit"></i></button>
         </div>
       </header>
-      <nav>
-        <button data-tab="assistant" class="active">Assistant</button>
-        <button data-tab="history">History</button>
-        <button data-tab="profile">My details</button>
-        <button data-tab="settings">Settings</button>
-        <button data-tab="teach">Teach</button>
+
+      <nav class="tabs">
+        <button data-tab="assistant" class="active" title="Assistant"><i class="ic ic-chat"></i><span>Assistant</span></button>
+        <button data-tab="history" title="History"><i class="ic ic-history"></i><span>History</span></button>
+        <button data-tab="profile" title="My details"><i class="ic ic-user"></i><span>Me</span></button>
+        <button data-tab="teach" title="Teach"><i class="ic ic-teach"></i><span>Teach</span></button>
+        <button data-tab="settings" title="Settings"><i class="ic ic-gear"></i><span>Settings</span></button>
       </nav>
 
-      <div id="tab-assistant" class="tab">
-        <div id="log"></div>
-        <div id="ask-box" hidden>
-          <p id="ask-question"></p>
-          <div id="ask-options"></div>
-          <div class="row">
-            <input id="ask-input" placeholder="Type your answer" />
-            <input id="ask-file" type="file" hidden />
-            <button id="ask-send" class="primary">Send</button>
+      <!-- ---------------------------------------------------------- assistant -->
+      <div id="tab-assistant" class="tab chat">
+        <div id="thread" class="thread">
+          <div id="greeting" class="greeting">
+            <div class="hello">
+              <span class="mark lg glow"></span>
+              <div><h2 id="greeting-text">Hello!</h2><p class="muted">What do you want to do today?</p></div>
+            </div>
+
+            <div class="home-section">
+              <div class="sec-head"><b>Your apps</b><span class="muted tiny">open them as usual</span>
+                <button id="add-link-btn" type="button" class="link small">+ Add</button></div>
+              <div id="apps" class="apps"></div>
+              <form id="link-form" class="link-form" hidden>
+                <input id="link-title" placeholder="Name, e.g. Leave portal" />
+                <input id="link-url" placeholder="http://hr.office.local:8200/" />
+                <div class="row">
+                  <button id="link-current" type="button" class="small">Use this page</button>
+                  <button type="submit" class="primary small">Save</button>
+                </div>
+                <p id="link-msg" class="tiny muted"></p>
+              </form>
+            </div>
+
+            <div class="home-section">
+              <div class="sec-head"><b id="frequent-title">You often</b></div>
+              <div id="suggestions" class="suggestions"></div>
+            </div>
+
+            <div class="home-section" id="recent-section" hidden>
+              <div class="sec-head"><b>Recent</b><button type="button" class="link small" data-goto="history">See all</button></div>
+              <div id="recent" class="recent"></div>
+            </div>
+            <p class="tiny muted fineprint">I'll ask before submitting anything. Every step is recorded.</p>
           </div>
-          <button id="ask-cancel" class="link">Cancel task</button>
-        </div>
-        <div id="confirm-box" hidden>
-          <p><strong>Please confirm before I submit:</strong></p>
-          <p id="confirm-warning" class="error" hidden></p>
-          <ul id="confirm-checks" class="checks" hidden></ul>
-          <table id="confirm-table"></table>
-          <div class="row">
-            <button id="confirm-yes" class="primary">Yes, submit</button>
-            <button id="confirm-no">No, stop</button>
+          <div id="log"></div>
+
+          <div id="ask-box" class="row-assistant" hidden>
+            <span class="mark sm"></span>
+            <div class="bubble question">
+              <p id="ask-question"></p>
+              <div id="ask-options" class="chips"></div>
+              <div class="answer">
+                <input id="ask-input" placeholder="Type your answer…" />
+                <input id="ask-file" type="file" hidden />
+                <button id="ask-send" class="primary">Send</button>
+              </div>
+              <button id="ask-cancel" class="link tiny">Cancel this task</button>
+            </div>
+          </div>
+
+          <div id="confirm-box" class="review" hidden>
+            <div class="review-head">
+              <span class="review-icon">✋</span>
+              <div><b>Ready to submit?</b><div class="tiny muted">Please check before I press <b id="confirm-button"></b></div></div>
+            </div>
+            <p id="confirm-warning" class="callout danger" hidden></p>
+            <ul id="confirm-checks" class="callout warn checks" hidden></ul>
+            <table id="confirm-table"></table>
+            <div class="review-actions">
+              <button id="confirm-no">Don't submit</button>
+              <button id="confirm-yes" class="primary">Yes, submit</button>
+            </div>
           </div>
         </div>
-        <form id="prompt-form" class="row">
-          <textarea id="prompt" rows="2" placeholder="e.g. Apply casual leave for 3 days from Monday, reason: family function"></textarea>
-          <button id="run-btn" class="primary" type="submit">Run</button>
-          <button id="stop-btn" type="button" hidden>Stop</button>
+
+        <form id="prompt-form" class="composer">
+          <textarea id="prompt" rows="1" placeholder="Ask me to do something…"></textarea>
+          <div class="composer-bar">
+            <button id="home-btn" type="button" class="link small" title="Back to your home screen" hidden>⌂ Home</button>
+            <span class="tiny muted" id="composer-hint">Enter to send · Shift+Enter for a new line</span>
+            <button id="stop-btn" type="button" class="icon-btn stop" title="Stop" hidden><i class="ic ic-stop"></i></button>
+            <button id="run-btn" type="submit" class="icon-btn send" title="Send"><i class="ic ic-send"></i></button>
+          </div>
         </form>
       </div>
 
-      <div id="tab-history" class="tab" hidden>
+      <!-- ---------------------------------------------------------- history -->
+      <div id="tab-history" class="tab pane" hidden>
+        <h3>Your tasks</h3>
+        <p class="muted small">Everything I did for you, step by step. Open a task to see its full record.</p>
         <div id="history-list"></div>
-        <div id="history-detail" hidden></div>
+        <div id="history-detail" class="card" hidden></div>
       </div>
 
-      <div id="tab-profile" class="tab" hidden>
-        <p class="muted small">What the assistant knows about you. Directory details come from the company
-          directory; learned details are answers you gave earlier.</p>
-        <table id="profile-table"></table>
-        <form id="profile-form" class="row">
-          <input id="profile-field" placeholder="field (e.g. home_address)" />
-          <input id="profile-value" placeholder="value" />
-          <button class="primary" type="submit">Save</button>
+      <!-- ---------------------------------------------------------- profile -->
+      <div id="tab-profile" class="tab pane" hidden>
+        <h3>What I know about you</h3>
+        <p class="muted small">From the company directory, plus things you told me that I remember for next time.
+          Delete anything you don't want me to use.</p>
+        <table id="profile-table" class="kv"></table>
+        <form id="profile-form" class="card inline-form">
+          <input id="profile-field" placeholder="Detail, e.g. desk_number" />
+          <input id="profile-value" placeholder="Value" />
+          <button class="primary" type="submit">Add</button>
         </form>
       </div>
 
-      <div id="tab-teach" class="tab" hidden>
-        <p class="muted small">Show the assistant how a workflow is done: start recording, do the task once in the
-          page, then stop. Passwords are never recorded. The assistant drafts a playbook for you to review.</p>
-        <input id="teach-name" placeholder="Workflow name, e.g. Order food from the canteen" />
-        <div class="row">
-          <button id="teach-start" class="primary">Start recording</button>
-          <button id="teach-stop" hidden>Stop recording</button>
+      <!-- ---------------------------------------------------------- teach -->
+      <div id="tab-teach" class="tab pane" hidden>
+        <h3>Teach me a workflow</h3>
+        <p class="muted small">Do a task once while I watch. I'll learn the steps and repeat them for new requests.
+          Passwords are never recorded.</p>
+        <div class="card">
+          <input id="teach-name" placeholder="Name it, e.g. Raise a travel request" />
+          <div class="row">
+            <button id="teach-start" class="primary"><span class="rec"></span> Start recording</button>
+            <button id="teach-stop" hidden>■ Stop recording</button>
+          </div>
+          <p id="teach-status" class="small"></p>
+          <ol id="teach-events" class="steps-list"></ol>
         </div>
-        <ol id="teach-events" class="small"></ol>
-        <div id="teach-review" hidden>
-          <label>Draft playbook (edit if needed)</label>
+        <div id="teach-review" class="card" hidden>
+          <label>Draft playbook (edit anything that's wrong)</label>
           <textarea id="teach-draft" rows="12"></textarea>
           <div class="row">
-            <button id="teach-save" class="primary">Save playbook</button>
             <button id="teach-discard">Discard</button>
+            <button id="teach-save" class="primary">Save playbook</button>
           </div>
         </div>
-        <p id="teach-status"></p>
         <h4>Playbooks</h4>
-        <div id="playbook-list" class="small"></div>
+        <div id="playbook-list"></div>
       </div>
 
-      <div id="tab-settings" class="tab" hidden>
-        <p>Active model: <strong id="active-model"></strong></p>
-        <label><input type="radio" name="mode" value="list" checked /> Approved models</label>
-        <select id="model-select"></select>
-        <label id="custom-label"><input type="radio" name="mode" value="custom" /> Custom endpoint (OpenAI-compatible: Ollama, vLLM, LM Studio…)</label>
-        <div id="custom-fields">
-          <input id="custom-url" placeholder="http://gpu1.office.local:11434/v1" />
-          <input id="custom-model" placeholder="Model name, e.g. gemma3:27b" />
-          <input id="custom-key" type="password" placeholder="API key (optional)" />
+      <!-- ---------------------------------------------------------- settings -->
+      <div id="tab-settings" class="tab pane" hidden>
+        <h3>AI model</h3>
+        <div class="card model-card">
+          <div class="tiny muted">Currently using</div>
+          <div id="active-model" class="strong"></div>
         </div>
-        <label>Temperature <input id="temperature" type="number" min="0" max="1" step="0.1" value="0.2" /></label>
-        <div class="row">
-          <button id="test-btn">Test connection</button>
-          <button id="save-btn" class="primary">Save</button>
+        <div class="card">
+          <label class="radio"><input type="radio" name="mode" value="list" checked /> Approved models</label>
+          <select id="model-select"></select>
+          <label id="custom-label" class="radio"><input type="radio" name="mode" value="custom" /> Custom endpoint
+            <span class="muted small">(OpenAI-compatible: Ollama, vLLM, LM Studio…)</span></label>
+          <div id="custom-fields">
+            <input id="custom-url" placeholder="http://gpu1.office.local:11434/v1" />
+            <input id="custom-model" placeholder="Model name, e.g. gemma3:27b" />
+            <input id="custom-key" type="password" placeholder="API key (optional)" />
+          </div>
+          <label>Creativity (temperature) <input id="temperature" type="number" min="0" max="1" step="0.1" value="0.2" /></label>
+          <div class="row">
+            <button id="test-btn">Test connection</button>
+            <button id="save-btn" class="primary">Save</button>
+          </div>
+          <p id="settings-status" class="small"></p>
         </div>
-        <p id="settings-status"></p>
       </div>
     </section>
     <script type="module" src="./main.ts"></script>

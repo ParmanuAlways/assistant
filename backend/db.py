@@ -51,6 +51,10 @@ CREATE TABLE IF NOT EXISTS experiences (
   id INTEGER PRIMARY KEY AUTOINCREMENT, site TEXT, goal TEXT, steps TEXT, task_id TEXT, successes INTEGER DEFAULT 1,
   failures INTEGER DEFAULT 0, created_at TEXT, last_used TEXT);
 
+-- Each user's own shortcuts to the sites they use ("Your apps" on the home screen)
+CREATE TABLE IF NOT EXISTS user_links (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, emp_id TEXT, title TEXT, url TEXT, created_at TEXT);
+
 -- One row per finished task, for playbook/workflow health
 CREATE TABLE IF NOT EXISTS task_outcomes (
   task_id TEXT PRIMARY KEY, site TEXT, workflow TEXT, status TEXT, summary TEXT, drift INTEGER DEFAULT 0, ended_at TEXT);

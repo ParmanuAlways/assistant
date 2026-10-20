@@ -170,6 +170,7 @@ function snapshotInPage(): FrameSnapshot {
   const all: HTMLElement[] = [];
   const walk = (root: Document | ShadowRoot | Element) => {
     for (const el of Array.from(root.children) as HTMLElement[]) {
+      if (el.id === '__oa_working') continue;   // our own "assistant is working" overlay
       all.push(el);
       if (el.shadowRoot) walk(el.shadowRoot);
       walk(el);
@@ -591,6 +592,40 @@ function waitForStableInPage(): Promise<boolean> {
   });
 }
 
+// A soft glow around the page and a pill saying what the assistant is doing (top frame only; in a shadow root so
+// the page's own styles can't break it and the page reader never sees it)
+function workingInPage(text: string | null) {
+  let host = document.getElementById('__oa_working');
+  if (!text) {
+    host?.remove();
+    return;
+  }
+  if (!host) {
+    host = document.createElement('div');
+    host.id = '__oa_working';
+    host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483646';
+    const root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = `<style>
+      .glow{position:fixed;inset:0;border-radius:6px;box-shadow:inset 0 0 0 2px rgba(124,58,237,.55),inset 0 0 28px rgba(124,58,237,.35);
+        animation:b 2.4s ease-in-out infinite}
+      @keyframes b{50%{box-shadow:inset 0 0 0 2px rgba(99,102,241,.35),inset 0 0 16px rgba(168,85,247,.2)}}
+      .pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;max-width:70vw;
+        padding:8px 14px 8px 8px;border-radius:999px;background:rgba(22,24,36,.92);color:#fff;font:500 13px/1.3 Inter,system-ui,sans-serif;
+        box-shadow:0 8px 30px rgba(0,0,0,.25)}
+      .m{width:22px;height:22px;border-radius:7px;background:conic-gradient(from 200deg,#6366f1,#a855f7,#ec4899,#6366f1);display:grid;
+        place-items:center;font-size:12px;flex:none;animation:h 2.4s linear infinite}
+      @keyframes h{to{filter:hue-rotate(360deg)}}
+      .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.n{opacity:.6;margin-right:4px}</style>
+      <div class="glow"></div><div class="pill"><span class="m">✦</span><span class="t"><span class="n">Office Assistant</span><span id="s"></span></span></div>`;
+    (document.body || document.documentElement).appendChild(host);
+  }
+  host.shadowRoot!.getElementById('s')!.textContent = text;
+}
+
+export async function showWorking(tabId: number, text: string | null) {
+  await browser.scripting.executeScript({ target: { tabId, frameIds: [0] }, func: workingInPage, args: [text] }).catch(() => {});
+}
+
 function endTaskInPage() {
   try {
     sessionStorage.removeItem('__officeAssistantActive');
@@ -645,6 +680,7 @@ export async function act(tabId: number, page: PageSnapshot | null, action: Page
 
 export async function endTask(tabId: number) {
   await browser.scripting.executeScript({ target: { tabId, allFrames: true }, func: endTaskInPage }).catch(() => {});
+  await showWorking(tabId, null);
 }
 
 /** Strips extension-only fields before the snapshot goes to the backend. */

@@ -486,6 +486,10 @@ def step(task_id: str, body: StepIn, u: User = Depends(current_user)):
     if any(p["source"] == "teach" for p in playbooks):
         playbooks = agent.select_playbooks(playbooks, t["prompt"], host)
     playbooks = [{k: p[k] for k in ("site", "task", "steps")} for p in playbooks]
+    for link in con.execute("SELECT title, url FROM user_links WHERE emp_id=?", (u.emp_id,)):
+        h = urlparse(link["url"]).hostname or ""
+        if any(fnmatch.fnmatch(h, s) for s in pol["allowed_sites"]):
+            playbooks.append({"site": h, "task": f"{link['title']} (the user's saved app)", "steps": f"Start URL: {link['url']}"})
     profile = get_profile(u.emp_id)
     if colleagues := directory_lookup(t["prompt"]):
         profile["colleagues_from_company_directory"] = colleagues
@@ -1125,6 +1129,56 @@ def put_playbook(pid: int, body: dict, u: User = Depends(require("admin"))):
     con.commit()
     db.log_event(con, u.emp_id, "playbook_changed", {"id": pid, "steps": body["steps"]})
     return playbooks(u)
+
+
+# ---------------------------------------------------------------- home screen: your apps, what you usually do
+
+class LinkIn(BaseModel):
+    title: str
+    url: str
+
+
+@app.get("/api/links")
+def list_links(u: User = Depends(current_user)):
+    return [dict(r) for r in con.execute("SELECT id, title, url FROM user_links WHERE emp_id=? ORDER BY id", (u.emp_id,))]
+
+
+@app.post("/api/links")
+def add_link(body: LinkIn, u: User = Depends(current_user)):
+    url, title = body.url.strip(), body.title.strip()
+    if not re.match(r"^https?://[^\s/]+", url):
+        raise HTTPException(400, "Enter a full address starting with http:// or https://")
+    title = title or urlparse(url).hostname
+    cur = con.execute("INSERT INTO user_links (emp_id, title, url, created_at) VALUES (?,?,?,?)", (u.emp_id, title[:60], url, db.now()))
+    con.commit()
+    db.log_event(con, u.emp_id, "link_added", {"title": title, "url": url})
+    allowed = any(fnmatch.fnmatch(urlparse(url).hostname or "", s) for s in policy()["allowed_sites"])
+    return {"id": cur.lastrowid, "title": title, "url": url, "assistant_can_use": allowed}
+
+
+@app.delete("/api/links/{lid}")
+def delete_link(lid: int, u: User = Depends(current_user)):
+    con.execute("DELETE FROM user_links WHERE id=? AND emp_id=?", (lid, u.emp_id))
+    con.commit()
+    db.log_event(con, u.emp_id, "link_deleted", {"id": lid})
+    return {"ok": True}
+
+
+@app.get("/api/home")
+def home(u: User = Depends(current_user)):
+    """The first screen after sign-in: the user's apps, the tasks they do most often, and their latest tasks."""
+    tasks = [dict(r) for r in con.execute("SELECT task_id, prompt, status, summary, started_at FROM tasks WHERE emp_id=? "
+                                          "ORDER BY started_at DESC LIMIT 200", (u.emp_id,))]
+    groups = []   # similar requests count as the same kind of task ("apply leave ..." twice)
+    for t in tasks:
+        g = next((g for g in groups if skills.similarity(g["prompt"], t["prompt"]) >= 0.6), None)
+        if g:
+            g["count"] += 1
+            g["done"] += t["status"] == "completed"
+        else:
+            groups.append({"prompt": t["prompt"], "count": 1, "done": int(t["status"] == "completed"), "last": t["started_at"]})
+    frequent = sorted(groups, key=lambda g: -g["count"])[:4]   # (groups are newest first; ties stay that way)
+    return {"links": list_links(u), "frequent": frequent, "recent": tasks[:5]}
 
 
 @app.get("/api/admin/playbook-health")
