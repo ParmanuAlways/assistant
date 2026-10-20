@@ -37,7 +37,7 @@
   {
     "name": "Test connection to the model works",
     "ok": true,
-    "detail": "✅ Connected (7 ms) · structured output: JSON schema · system role: yes"
+    "detail": "✅ Connected (10 ms) · structured output: JSON schema · system role: yes"
   },
   {
     "name": "A custom endpoint is refused when policy forbids it",
@@ -57,7 +57,7 @@
   {
     "name": "Task 1 completed",
     "ok": true,
-    "detail": "DoneLeave request LR-1001 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
+    "detail": "DoneLeave request LR-1004 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
   },
   {
     "name": "Assistant asked for the missing emergency contact (and nothing else it already knew)",
@@ -77,12 +77,12 @@
   {
     "name": "Leave really saved in the portal with correct details",
     "ok": true,
-    "detail": "{\"id\":1,\"ref\":\"LR-1001\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Casual Leave\",\"from_date\":\"2026-10-19\",\"to_date\":\"2026-10-21\",\"days\":3,\"reason\":\"family function\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 15:08:51\"}"
+    "detail": "{\"id\":4,\"ref\":\"LR-1004\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Casual Leave\",\"from_date\":\"2026-10-19\",\"to_date\":\"2026-10-21\",\"days\":3,\"reason\":\"family function\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 17:16:45\"}"
   },
   {
     "name": "Panel shows the leave reference to the user",
     "ok": true,
-    "detail": "LR-1001"
+    "detail": "LR-1004"
   },
   {
     "name": "Answer was learned into the profile",
@@ -97,7 +97,7 @@
   {
     "name": "Task 2 saved correctly",
     "ok": true,
-    "detail": "{\"id\":2,\"ref\":\"LR-1002\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Sick Leave\",\"from_date\":\"2026-11-02\",\"to_date\":\"2026-11-02\",\"days\":1,\"reason\":\"medical checkup\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 15:09:07\"}"
+    "detail": "{\"id\":5,\"ref\":\"LR-1005\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Sick Leave\",\"from_date\":\"2026-11-02\",\"to_date\":\"2026-11-02\",\"days\":1,\"reason\":\"medical checkup\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 17:17:01\"}"
   },
   {
     "name": "Declining the confirmation stops the task and submits nothing",
@@ -155,6 +155,11 @@
     "detail": ""
   },
   {
+    "name": "A typed-in API key is kept, encrypted (never in plain text)",
+    "ok": true,
+    "detail": "{\"sealed\":true,\"plain\":false,\"has\":true}"
+  },
+  {
     "name": "When the chosen model is down, it falls back to the default and logs it",
     "ok": true,
     "detail": "{\"model\":\"stand-in-v1\",\"url\":\"http://llm.office.local:9999/v1\",\"error\":\"cannot reach the model server: Failed to fetch\",\"fallback\":\"stand-in-v1\"}"
@@ -167,7 +172,7 @@
   {
     "name": "Every settings change is in the audit log",
     "ok": true,
-    "detail": "3 settings_changed events"
+    "detail": "4 settings_changed events"
   },
   {
     "name": "No password ever reaches the audit log",
@@ -197,11 +202,11 @@
   {
     "name": "Integrity check passes on the untouched log",
     "ok": true,
-    "detail": "✔ Chain valid — 131 events checked"
+    "detail": "✔ Chain valid — 132 events checked"
   },
   {
     "name": "Integrity check detects a tampered record",
     "ok": true,
-    "detail": "✖ TAMPERING DETECTED at event #27 (user_answer, task 066e4fd3-05af-4fc1-a3b9-a52eb1dcd894, step 26) after 26 valid events"
+    "detail": "✖ TAMPERING DETECTED at event #27 (user_answer, task 92599790-fa6c-4263-9845-b846d1ab4f4f, step 26) after 26 valid events"
   }
 ]

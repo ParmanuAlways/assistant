@@ -265,6 +265,14 @@ try {
   await panel.click('#save-btn');
   await panel.waitForFunction(() => document.getElementById('active-model').textContent.includes('Custom'));
   check('Custom endpoint saved and active', (await panel.textContent('#active-model')).includes('llm.office.local:9100'));
+  // an API key typed in for it: kept (for good) but encrypted in the browser's storage
+  await apiAs(panel, '/api/settings', 'PUT', { mode: 'custom', custom_url: 'http://llm.office.local:9100/v1', custom_model: 'stand-in-v1', api_key: 'sk-e2e-secret-777' });
+  const keyCheck = await panel.evaluate(async () => {
+    const all = await window.__officeAssistantDebug.store.all('settings');
+    return { sealed: all.every((x) => !x.custom_key || String(x.custom_key).startsWith('v1:')), plain: JSON.stringify(all).includes('sk-e2e-secret-777'),
+      has: (await window.__officeAssistantDebug.api('/api/settings')).has_custom_key };
+  });
+  check('A typed-in API key is kept, encrypted (never in plain text)', keyCheck.sealed && !keyCheck.plain && keyCheck.has, JSON.stringify(keyCheck));
   await shot(panel, 'settings-custom-saved');
 
   // dead endpoint -> the assistant falls back to the admin's default model

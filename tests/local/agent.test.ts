@@ -291,6 +291,26 @@ check('settings: custom endpoints refused unless the admin allows them', denied 
 const test = await api('/api/settings/test', 'POST', { mode: 'list', provider_id: 1 });
 check('settings: test connection', test.ok === true, test);
 
+// a model API key the user types in: kept for good, but encrypted at rest; still sent to the model server
+setDevConfig({ models: [{ id: 1, name: 'Fake', url: URL_, model: 'fake', default: true }], agent: { today: '2026-10-19' },
+  allowCustomEndpoints: true, allowedModelHosts: ['127.0.0.1'] });
+await api('/api/settings', 'PUT', { mode: 'custom', custom_url: URL_, custom_model: 'fake', api_key: 'sk-test-12345' });
+const saved = await store.get('settings', 'EMP1042');
+check('API key: stored encrypted, never in plain text', String(saved.custom_key).startsWith('v1:') && !JSON.stringify(saved).includes('sk-test-12345'), saved);
+const { modelCfg } = await import('../../extension/lib/local/model');
+check('API key: decrypted for use', (await modelCfg('EMP1042')).key === 'sk-test-12345');
+let auth = '';
+const authSrv = http.createServer((req, res) => { auth = String(req.headers.authorization || ''); req.resume();
+  req.on('end', () => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ choices: [{ message: { content: 'OK' }, finish_reason: 'stop' }] })); }); });
+await new Promise<void>((ok) => authSrv.listen(0, '127.0.0.1', ok));
+await callModel({ ...(await modelCfg('EMP1042')), url: `http://127.0.0.1:${(authSrv.address() as any).port}/v1` }, [{ role: 'user', content: 'hi' }], { json_mode: false });
+check('API key: sent to the model server', auth === 'Bearer sk-test-12345', auth);
+authSrv.close();
+await api('/api/settings', 'PUT', { mode: 'custom', custom_url: URL_, custom_model: 'fake' });
+check('API key: kept when settings are saved again without retyping it', (await modelCfg('EMP1042')).key === 'sk-test-12345');
+await api('/api/settings', 'PUT', { mode: 'list', provider_id: 1 });
+setDevConfig({ models: [{ id: 1, name: 'Fake', url: URL_, model: 'fake', default: true }], agent: { today: '2026-10-19' } });
+
 // teach mode
 queue = [];
 const draft = await api('/api/teach/draft', 'POST', { name: 'Travel', site: 'legacy.office.local', events });

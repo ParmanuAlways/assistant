@@ -3,6 +3,7 @@
 // automatically: JSON schema -> JSON mode -> plain text, and system role -> instructions merged into the user message.
 import { getConfig, type ModelEntry } from '../config';
 import * as store from './store';
+import { unseal } from './secret';
 
 export interface Cfg {
   name: string;
@@ -18,7 +19,8 @@ export interface Cfg {
 
 export interface UserSettings {
   emp_id: string; provider_id: number | null; custom_url: string | null; custom_model: string | null;
-  custom_key: string | null; temperature: number; updated_at: string;
+  custom_key: string | null;   // sealed (lib/local/secret.ts), never the plain key
+  temperature: number; updated_at: string;
 }
 
 export function entryCfg(p: ModelEntry, temperature = 0.2): Cfg {
@@ -39,7 +41,7 @@ export async function modelCfg(emp_id: string): Promise<Cfg> {
   const s = await store.get<UserSettings>('settings', emp_id);
   const temp = s?.temperature ?? 0.2;
   if (s?.custom_url && cfg.allowCustomEndpoints)
-    return { name: 'Custom endpoint', url: s.custom_url, model: s.custom_model || '', key: s.custom_key, vision: false, temperature: temp,
+    return { name: 'Custom endpoint', url: s.custom_url, model: s.custom_model || '', key: await unseal(s.custom_key), vision: false, temperature: temp,
       provider_id: null, json_mode: 'auto', context_tokens: 8192 };
   const p = s?.provider_id != null ? cfg.models.find((m) => m.id === s.provider_id) : undefined;
   if (p) return entryCfg(p, temp);

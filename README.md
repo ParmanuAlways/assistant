@@ -56,10 +56,14 @@ Demo users: `ravi / ravi123` (user), `anita / anita123` (auditor), `admin1 / adm
    `allowedSites`, `maxSteps`, `allowCustomEndpoints`/`allowedModelHosts`, `playbooks`, `commsSources`,
    `letterSources`, `directoryUrl`. Users cannot change these. Otherwise the defaults in `lib/config.ts` are used.
 4. **Extension ID:** it is fixed by the key in `infra/keys/`. Keep `extension-key.pem` private and use it to sign the `.crx` you force-install with the `ExtensionInstallForcelist` policy.
-5. **Data and audit:** each user's data stays in their browser profile on their PC (nothing central to run or
+5. **Model API keys:** usually none (an office model server on the intranet). A key IT sets is part of the `models`
+   policy. A key a user types in for their own server (only if `allowCustomEndpoints`) is kept for good, encrypted
+   with a key the browser holds and will not hand out (`lib/local/secret.ts`): a copy of the profile on another PC
+   shows only ciphertext.
+6. **Data and audit:** each user's data stays in their browser profile on their PC (nothing central to run or
    back up). The audit log is hash-chained, so any edit or deletion is detected by *Verify*; auditors see the log
    of the browser they open the dashboard in, and *Export audit log* saves it (JSON) for collecting centrally.
-6. **Playbooks:** put one per site in the `playbooks` policy. A playbook someone teaches is used in their own
+7. **Playbooks:** put one per site in the `playbooks` policy. A playbook someone teaches is used in their own
    browser; to share it, an admin copies it into the policy.
 
 ## Real models (offline, CPU)

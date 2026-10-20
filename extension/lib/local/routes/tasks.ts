@@ -3,6 +3,7 @@
 import { getConfig } from '../../config';
 import { ApiError } from '../../errors';
 import * as agent from '../agent';
+import { seal } from '../secret';
 import { logEvent, mask, stable, taskEvents } from '../audit';
 import { getProfile, requireRole, today as todayDate, type User } from '../identity';
 import { callModel, capabilities, defaultModelCfg, entryCfg, modelCfg, type Cfg, type UserSettings } from '../model';
@@ -84,7 +85,7 @@ route('PUT', '/api/settings', async ({ user, body }) => {
   const before = (await settingsOf(user)).active;
   const old = await store.get<UserSettings>('settings', user.emp_id);
   const custom = b.mode === 'custom';
-  const key = b.api_key ? b.api_key : old?.custom_key && custom ? old.custom_key : null;
+  const key = b.api_key ? await seal(b.api_key) : old?.custom_key && custom ? old.custom_key : null;   // kept, encrypted
   await store.put('settings', { emp_id: user.emp_id, provider_id: custom ? null : b.provider_id ?? null, custom_url: custom ? b.custom_url : null,
     custom_model: custom ? b.custom_model : null, custom_key: custom ? key : null, temperature: b.temperature, updated_at: store.now() });
   const after = (await settingsOf(user)).active;
