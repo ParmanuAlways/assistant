@@ -17,21 +17,8 @@ const TASK_TIMEOUT_MS = Number(process.env.TASK_MINUTES || 50) * 60 * 1000;
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-// The model to evaluate and the assistant's switches, as IT would set them by browser policy (dev builds read them
-// from storage.local): DEFAULT_MODEL_URL / DEFAULT_MODEL_NAME, AGENT_PLAN, AGENT_WORKFLOWS, AGENT_CALENDAR,
-// AGENT_VISION, AGENT_TODAY, AGENT_JSON_MODE (auto|schema|object|none)
-let started = {};   // what ./start-services.sh was started with (older run scripts pass the model that way)
-try { started = JSON.parse(fs.readFileSync(`${ROOT}/infra/logs/run-env.json`, 'utf8')); } catch {}
-const env = { ...started, ...process.env };
-if (!env.AGENT_JSON_MODE && env.AGENT_SCHEMA) env.AGENT_JSON_MODE = env.AGENT_SCHEMA === '1' ? 'schema' : 'object';
-const flag = (v, dflt) => (v === undefined || v === '' ? dflt : v === '1');
-const DEV_CONFIG = {
-  ...(env.DEFAULT_MODEL_URL ? { models: [{ id: 1, name: env.DEFAULT_MODEL_NAME ? `${env.DEFAULT_MODEL_NAME} (llama.cpp, CPU)` : 'Model under test',
-    url: env.DEFAULT_MODEL_URL, model: env.DEFAULT_MODEL_NAME || 'stand-in-v1', default: true, vision: env.AGENT_VISION === '1',
-    json_mode: env.AGENT_JSON_MODE || 'auto' }] } : {}),
-  agent: { plan: flag(env.AGENT_PLAN, true), workflows: flag(env.AGENT_WORKFLOWS, true), calendar: flag(env.AGENT_CALENDAR, true),
-    vision: env.AGENT_VISION === '1', ...(env.AGENT_TODAY ? { today: env.AGENT_TODAY } : {}) },
-};
+import { devConfigFromEnv } from './dev-config.mjs';
+const DEV_CONFIG = devConfigFromEnv(ROOT);   // the model under test, the date, the switches (as browser policy)
 const getJSON = async (u) => (await fetch(u)).json();
 const leaves = () => getJSON('http://hr.office.local:8200/debug/leaves');
 const records = async (site) => (await getJSON('http://intranet.office.local:8300/debug/records')).filter((r) => r.site === site);

@@ -3,6 +3,7 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
+import { applyDevConfig } from './dev-config.mjs';
 
 const [LABEL, DEMO] = process.argv.slice(2);
 const ROOT = '/home/user/browser-agent';
@@ -106,6 +107,7 @@ try {
   }
 
   // 1. Ravi records the workflow
+  await applyDevConfig(panel);   // the model under test (as browser policy would set it)
   await signIn('ravi', 'ravi123');
   await panel.click('nav button[data-tab=teach]');
   await panel.fill('#teach-name', DEMOS[DEMO].name);

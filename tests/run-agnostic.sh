@@ -21,7 +21,7 @@ pkill -x ollama
 "$ROOT/reset-data.sh"
 (cd "$ROOT/standin-model" && STANDIN_STRICT=1 nohup python3 -m uvicorn server:app --port 9101 > "$ROOT/infra/logs/strict.log" 2>&1 &)
 sleep 3
-export AGENT_TODAY=2026-10-18 DEFAULT_MODEL_URL=http://llm.office.local:9101/v1; "$ROOT/start-services.sh" >/dev/null
+AGENT_TODAY=2026-10-18 DEFAULT_MODEL_URL=http://llm.office.local:9101/v1 "$ROOT/start-services.sh" >/dev/null
 echo "=================== agnostic: STRICT minimal server  $(date +%T)"
 (cd "$ROOT/tests" && xvfb-run -a node eval.mjs "agnostic-strict-server" hr-casual,hr-sick)
 echo "AGNOSTIC FINISHED $(date +%T)"

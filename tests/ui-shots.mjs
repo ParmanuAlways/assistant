@@ -1,4 +1,5 @@
-// Screenshots of the whole screen: a real Chrome window with the Office Assistant panel docked on the right.
+// Screenshots of the whole screen: a real Chrome window with the Office Assistant panel docked on the right,
+// with checks of what each screen must show (home screen, saved apps, page glow, questions, review, history).
 // Usage: xvfb-run -a -s "-screen 0 1440x900x24" node ui-shots.mjs [outdir] ["task 1 || task 2 || ..."]
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
@@ -14,6 +15,8 @@ const W = 1440, H = 900, PANEL = 430;
 fs.mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const grab = (name) => execFileSync('import', ['-window', 'root', `${OUT}/${name}.png`]);
+const checks = [];
+const check = (name, ok, detail = '') => { checks.push(!!ok); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${!ok && detail ? `  — ${detail}` : ''}`); };
 
 const ctx = await chromium.launchPersistentContext('/tmp/claude-0/ui-shots-profile', {
   headless: false, executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', viewport: null,
@@ -49,6 +52,8 @@ try {
   await panel.waitForSelector('#signed-in:not([hidden])', { timeout: 20000 });
   await sleep(1500);
   grab('02-home-first-time');
+  check('Home screen after sign-in: greeting, Your apps, suggestions', (await panel.textContent('#greeting-text')).includes('Ravi') &&
+    await panel.isVisible('#apps') && (await panel.$$('#suggestions .suggestion')).length > 0);
 
   // Register apps: one from the page that's open ("Use this page"), the rest by typing the address
   await panel.click('#add-link-btn');
@@ -68,6 +73,8 @@ try {
   }
   await sleep(600);
   grab('04-home-with-apps');
+  const apps = await panel.$$eval('a.app', (a) => a.map((x) => x.dataset.url));
+  check('8 apps registered and shown on the home screen', apps.length === 8 && apps.includes('http://intranet.office.local:8300/'), apps.join(' '));
 
   // Opening an app is just opening the site
   const opened = ctx.waitForEvent('page');
@@ -76,6 +83,7 @@ try {
   await site.waitForLoadState();
   await sleep(800);
   grab('05-app-opened');
+  check('An app opens as the normal site (no AI)', site.url().startsWith('http://hr.office.local:8200/'), site.url());
   await site.close();
   await portal.bringToFront();
   await portal.goto(START);
@@ -85,7 +93,7 @@ try {
     const first = run === 1;
     await panel.fill('#prompt', TASKS[run - 1]);
     await panel.click('#run-btn');
-    let working = false, asked = false, reviewed = false;
+    let working = false, asked = false, reviewed = false, reviewSources = [];
     const t0 = Date.now();
     while (Date.now() - t0 < 25 * 60 * 1000) {
       const s = await panel.evaluate(() => ({
@@ -110,13 +118,21 @@ try {
         else if (await panel.isVisible('#ask-input')) { await panel.fill('#ask-input', '9123456780'); await panel.click('#ask-send'); }
         else await panel.click('#ask-send');
       } else if (s.confirm) {
-        if (first && !reviewed) { reviewed = true; await sleep(400); grab('08-review'); }
+        if (first && !reviewed) {
+          reviewed = true; await sleep(400); grab('08-review');
+          reviewSources = await panel.$$eval('#confirm-table .src', (l) => l.map((x) => x.textContent));
+        }
         await panel.click('#confirm-yes');
       }
       await sleep(200);
     }
     await sleep(1200);
     if (first) {
+      const final = await panel.evaluate(() => document.body.dataset.agent);
+      check('Task done, with the page glow, a question and a review card on the way', final === 'completed' && working && asked && reviewed,
+        JSON.stringify({ final, working, asked, reviewed }));
+      check('Review card said where each value came from', reviewSources.length > 0, JSON.stringify(reviewSources));
+      check('The page glow is gone when the task is done', !(await portal.evaluate(() => !!document.getElementById('__oa_working')).catch(() => true)));
       grab('09-done');
       await panel.click('.work-head');          // open the finished step list
       await sleep(500);
@@ -127,13 +143,21 @@ try {
     await sleep(800);
   }
   grab('11-home-personalised');
+  if (TASKS.length > 1) {
+    const recent = await panel.$$eval('#recent .task', (l) => l.length);
+    const often = await panel.textContent('#frequent-title');
+    check('Personalised home: recent tasks and what you do often', recent > 0 && /often/i.test(often), `${recent} recent, "${often}"`);
+  }
   await panel.click('nav button[data-tab=history]');
   await sleep(1200);
   grab('12-history');
+  check('History lists every task', (await panel.$$('#history-list .task')).length === TASKS.length);
   await panel.click('nav button[data-tab=profile]');
   await sleep(1000);
   grab('13-my-details');
-  console.log('shots in', OUT);
+  check('My details: directory facts and the learned emergency contact', /EMP1042/.test(await panel.textContent('#profile-table')) &&
+    /9123456780/.test(await panel.textContent('#profile-table')));
+  console.log(`${checks.filter(Boolean).length}/${checks.length} checks passed; shots in ${OUT}`);
 } finally {
   await ctx.close();
 }

@@ -1,5 +1,6 @@
-// Probe the page reader on the Legacy ERP without a model: snapshot each page and try the high-level actions.
-// Usage: xvfb-run -a node probe.mjs
+// Probe the page reader and the browser actions on the Legacy ERP without a model: frames, hover menus, date pickers,
+// autocomplete, a pop-up window, Shadow DOM, table rows, a native confirm dialog, file upload. Checks what the app saved.
+// Usage: xvfb-run -a node probe.mjs   (QUIET=1 hides the page dumps)
 import { chromium } from 'playwright';
 const ROOT = '/home/user/browser-agent';
 const EXT = `${ROOT}/extension/.output/chrome-mv3`;
@@ -26,7 +27,7 @@ const act = (a) => panel.evaluate(async (a) => {
   const d = window.__officeAssistantDebug; const t = await d.targetTab(); return d.act(t.id, window.__last, a);
 }, a);
 const find = (s, pred) => s.elements.find(pred);
-const show = (s) => console.log(s.url, '|', s.title, '| frames', JSON.stringify(s.frames), '\n',
+const show = (s) => process.env.QUIET || console.log(s.url, '|', s.title, '| frames', JSON.stringify(s.frames), '\n',
   s.elements.map((e) => `[${e.id}] ${e.tag}${e.type ? ' ' + e.type : ''} ${e.label || ''} "${e.text || ''}"${e.value !== undefined ? ` value="${e.value}"` : ''}${e.menu ? ` menu=${e.menu}` : ''}${e.row ? ` row="${e.row.slice(0, 40)}"` : ''}${e.readonly ? ' readonly' : ''}${e.frame ? ' frame=' + e.frame : ''}`).join('\n '),
   '\n notices', JSON.stringify(s.notices), 'errors', JSON.stringify(s.errors));
 
@@ -82,4 +83,19 @@ console.log(await act({ action: 'upload', id: find(s, (e) => e.type === 'file').
 console.log(await act({ action: 'click', id: find(s, (e) => e.text === 'Upload').id })); await sleep(1500);
 s = await snap(); console.log(s.notices, s.text.slice(-120));
 console.log('native dialogs that reached the browser:', dialogs);
+const st = await (await fetch(`${L}/debug/state`)).json();
+const checks = [];
+const check = (name, ok, detail) => { checks.push(!!ok); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  — ${JSON.stringify(detail)}`}`); };
+const tr = st.travel.at(-1) || {}, pu = st.purchase.at(-1) || {}, ts = st.timesheets.at(-1) || {};
+check('Frameset + hover menu + date pickers + select: travel request saved', st.travel.length === 1 &&
+  /pune/i.test(JSON.stringify(tr)) && JSON.stringify(tr).includes('2026-10-21') && JSON.stringify(tr).includes('2026-12-02'), tr);
+check('Unapproved submit was not sent (only the approved one)', st.travel.length === 1, st.travel.length);
+// (the app stores codes: approver Priya Sharma = EMP0900, cost centre Engineering - Bangalore = CC-110)
+check('Autocomplete + pop-up lookup + masked number: purchase saved', st.purchase.length === 1 && pu.approver === 'EMP0900' &&
+  pu.cost_centre === 'CC-110' && /chair/i.test(pu.item) && String(pu.qty) === '2' && String(pu.price) === '8500', pu);
+check('Shadow DOM table: the right row (PO-1077) approved', st.pos.find((p) => p.po === 'PO-1077')?.status === 'Approved' &&
+  st.pos.filter((p) => p.status === 'Approved').length === 1, st.pos.filter((p) => p.status !== 'Pending'));
+check('File upload: timesheet uploaded for September 2026', st.timesheets.length === 1 && /september/i.test(JSON.stringify(ts)), ts);
+check('Native confirm dialog answered by the assistant (none left for the user)', dialogs.length === 0, dialogs);
+console.log(`${checks.filter(Boolean).length}/${checks.length} checks passed`);
 await ctx.close();
