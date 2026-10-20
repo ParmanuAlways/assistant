@@ -17,12 +17,13 @@ import jwt
 from cryptography.fernet import Fernet
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 import agent
 import comms
 import db
+import letters
 import skills
 
 KC_ISSUER = os.environ.get("KC_ISSUER", "http://keycloak.office.local:8080/realms/company")
@@ -1200,6 +1201,109 @@ def comms_sync(body: CommsSyncIn, u: User = Depends(current_user)):
 @app.get("/api/comms/search")
 def comms_search(q: str = "", folder: str = "", direction: str = "", u: User = Depends(current_user)):
     return comms.search(con, u.emp_id, q, folder, direction, today())
+
+
+# ---------------------------------------------------------------- correspondence (e-Office receipts)
+
+LETTER_DIR = os.path.join(os.path.dirname(__file__), "letters_store")
+
+
+class LetterIn(BaseModel):
+    pdf_b64: str
+    url: str = ""
+    original_name: str = ""
+    source: str = "e-Office"
+
+
+class DraftIn(BaseModel):
+    option: str
+    notes: str = ""
+    ai: bool = False
+
+
+def own_letter(lid, u: User):
+    row = con.execute("SELECT * FROM letters WHERE id=? AND emp_id=?", (lid, u.emp_id)).fetchone()
+    if not row:
+        raise HTTPException(404, "no such letter")
+    return row
+
+
+@app.post("/api/letters/ingest")
+def letter_ingest(body: LetterIn, u: User = Depends(current_user)):
+    """A letter the user downloaded: read it, say who it is from and what it asks, and where to file it."""
+    try:
+        pdf = base64.b64decode(body.pdf_b64)
+    except Exception:
+        raise HTTPException(400, "not base64")
+    if not pdf.startswith(b"%PDF") or len(pdf) > 20_000_000:
+        raise HTTPException(400, "not a PDF")
+    rec, new = letters.ingest(con, u.emp_id, pdf, body.source, body.url, body.original_name,
+                              os.path.join(LETTER_DIR, re.sub(r"\W", "_", u.emp_id)), today())
+    if new:
+        db.log_event(con, u.emp_id, "letter_filed", {"letter": rec["id"], "from": rec["folder"], "file": rec["file_name"],
+                                                     "intent": rec["intent"], "url": body.url[:300]})
+    return {**rec, "new": new}
+
+
+@app.get("/api/letters")
+def letter_list(u: User = Depends(current_user)):
+    return [letters.record(r) for r in con.execute("SELECT * FROM letters WHERE emp_id=? ORDER BY COALESCE(deadline, '9999'), id",
+                                                   (u.emp_id,))]
+
+
+@app.get("/api/letters/register.csv")
+def letter_register(u: User = Depends(current_user)):
+    rows = [letters.record(r) for r in con.execute("SELECT * FROM letters WHERE emp_id=? ORDER BY id", (u.emp_id,))]
+    return Response(letters.register_csv(rows), media_type="text/csv")
+
+
+@app.get("/api/letters/{lid}")
+def letter_detail(lid: int, u: User = Depends(current_user)):
+    row = own_letter(lid, u)
+    return {**letters.record(row), "body": json.loads(row["fields"]).get("body", "")}
+
+
+@app.get("/api/letters/{lid}/pdf")
+def letter_pdf(lid: int, u: User = Depends(current_user)):
+    row = own_letter(lid, u)
+    return FileResponse(os.path.join(LETTER_DIR, re.sub(r"\W", "_", u.emp_id), f"{row['sha256']}.pdf"), media_type="application/pdf")
+
+
+@app.post("/api/letters/{lid}/draft")
+def letter_draft(lid: int, body: DraftIn, u: User = Depends(current_user)):
+    """The reply for the option the user picked, in service format, as text and as a Word file."""
+    row = own_letter(lid, u)
+    f = json.loads(row["fields"])
+    if body.option not in [o[0] for o in letters.OPTIONS[row["intent"]]]:
+        raise HTTPException(400, "unknown option")
+    base = row["file_name"].removesuffix(".pdf")
+    if body.option == "none":
+        con.execute("UPDATE letters SET status='filed', draft=NULL WHERE id=?", (lid,))
+        db.log_event(con, u.emp_id, "letter_closed", {"letter": lid, "option": "none"})
+        return {"letter": False, "status": "filed"}
+    prof = get_profile(u.emp_id)
+    me = {"name": u.name, "designation": prof.get("designation") or "Deputy Secretary"}
+    our_no = f"A-11013/{lid}/2026-Admn ({letters.OUR_OFFICE['short']})"
+    d = letters.draft_reply(f, row["intent"], body.option, body.notes[:3000], me, today(), our_no)
+    lines, ai_used = d["lines"], False
+    if body.ai:
+        paras = [t for s, t in lines if s == "p"]
+        try:
+            out = json.loads(agent.call_model(model_cfg(u.emp_id), [
+                {"role": "system", "content": letters.AI_PROMPT},
+                {"role": "user", "content": "LETTER RECEIVED (subject): " + f.get("subject", "") + "\n\nDRAFT PARAGRAPHS:\n" +
+                 json.dumps(paras, ensure_ascii=False)}], schema=letters.AI_SCHEMA, timeout=300))
+            new = letters.apply_paras(lines, out.get("paras", []))
+            ai_used = new is not lines
+            lines = new
+        except Exception as e:
+            db.log_event(con, u.emp_id, "model_error", {"where": "letter_draft", "error": str(e)[:200]})
+    text = letters.lines_to_text(lines)
+    draft = {"option": body.option, "notes": body.notes[:3000], "kind": d["kind"], "text": text, "lines": lines, "ai": ai_used}
+    con.execute("UPDATE letters SET status='drafted', draft=? WHERE id=?", (json.dumps(draft), lid))
+    db.log_event(con, u.emp_id, "reply_drafted", {"letter": lid, "option": body.option, "kind": d["kind"], "ai": ai_used})
+    return {"letter": True, **draft, "status": "drafted", "filename": f"{base} - REPLY DRAFT.docx",
+            "docx_b64": base64.b64encode(letters.to_docx(lines)).decode()}
 
 
 @app.get("/api/admin/playbook-health")

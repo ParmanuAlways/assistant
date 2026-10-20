@@ -17,6 +17,7 @@ const check = (name, ok) => { checks.push(ok); console.log(`${ok ? 'PASS' : 'FAI
 
 // a test profile without Chrome's "Save password?" bubble
 const PROFILE = '/tmp/claude-0/comms-shots-profile';
+fs.rmSync(PROFILE, { recursive: true, force: true });   // no sign-ins left over from an earlier run
 fs.mkdirSync(`${PROFILE}/Default`, { recursive: true });
 fs.writeFileSync(`${PROFILE}/Default/Preferences`, JSON.stringify({ credentials_enable_service: false, profile: { password_manager_enabled: false } }));
 const ctx = await chromium.launchPersistentContext(PROFILE, {

@@ -89,9 +89,11 @@ def connect():
 
 def init(default_model_url: str, default_model_name: str | None = None):
     import comms
+    import letters
     con = connect()
     con.executescript(SCHEMA)
     con.executescript(comms.SCHEMA)
+    con.executescript(letters.SCHEMA)
     for table, col, ddl in (("site_playbooks", "status", "TEXT DEFAULT 'active'"),
                             ("site_playbooks", "source", "TEXT DEFAULT 'seed'"),
                             ("model_providers", "json_mode", "TEXT DEFAULT 'auto'"),        # auto|schema|object|none

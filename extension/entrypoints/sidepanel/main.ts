@@ -7,6 +7,7 @@ import { getAccessToken, login, logout } from '../../lib/auth';
 import { describeEvent, startRecording, stopRecording, type TeachEvent } from '../../lib/teach';
 import { esc, renderTimeline } from '../../lib/timeline';
 import { targetTab } from '../../lib/agent';
+import { loadLetters } from './letters';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 let me: { name: string; emp_id: string; roles: string[] } | null = null;
@@ -69,6 +70,7 @@ document.querySelectorAll<HTMLButtonElement>('nav button').forEach((b) => {
     if (b.dataset.tab === 'settings') loadSettings();
     if (b.dataset.tab === 'teach') loadPlaybooks();
     if (b.dataset.tab === 'comms') openComms();
+    if (b.dataset.tab === 'letters') loadLetters();
   };
 });
 

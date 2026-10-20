@@ -7,11 +7,18 @@ export interface CommsSource {
   signInUrl: string; // where to send the user if they are not signed in to that app
 }
 
+export interface LetterSource {
+  name: string;
+  hosts: string[];   // PDFs downloaded from these sites are letters to file (e.g. eoffice.nic.in)
+}
+
 export interface Config {
   apiUrl: string;
   keycloakUrl: string;
   clientId: string;
   commsSources: CommsSource[];
+  letterSources: LetterSource[];
+  letterFolder: string;   // filed under <Downloads>/<letterFolder>/<Correspondent>/
 }
 
 const DEFAULTS: Config = {
@@ -21,6 +28,8 @@ const DEFAULTS: Config = {
   commsSources: [
     { name: 'Legacy ERP', listUrl: 'http://legacy.office.local:8500/api/comms', signInUrl: 'http://legacy.office.local:8500/' },
   ],
+  letterSources: [{ name: 'e-Office', hosts: ['eoffice.office.local'] }],
+  letterFolder: 'eOffice',
 };
 
 export async function getConfig(): Promise<Config> {

@@ -30,6 +30,28 @@
           }
         }
       }
+    },
+    "letterSources": {
+      "type": "array",
+      "description": "Sites (e.g. e-Office) whose downloaded PDF letters are filed per correspondent and drafted replies for",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "letterFolder": {
+      "type": "string",
+      "description": "Folder inside Downloads where letters are filed (default eOffice)"
     }
   }
 }

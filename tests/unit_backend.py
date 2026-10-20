@@ -191,5 +191,53 @@ check("vision: image sent as image_url data URI", isinstance(user, list) and use
 check("vision: click_xy parsed", agent.parse_action(reply) == {"action": "click_xy", "x": 10, "y": 20, "thought": "t"})
 srv.shutdown()
 
+# ---- correspondence: read the 100 dummy e-Office letters, file them, draft replies
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "portal"))
+import sqlite3  # noqa: E402
+import tempfile  # noqa: E402
+import govletters  # noqa: E402
+import letters  # noqa: E402
+
+GL = govletters.generate(100)
+got = {"intent": 0, "file_no": 0, "deadline": 0, "sender": 0}
+for L in GL:
+    f = letters.parse(letters.pdf_text(govletters.render_pdf(L)), T)
+    got["intent"] += letters.classify(f)[0] == L["intent"]
+    got["file_no"] += "No." + f.get("file_no", "") in (L["file_no"], "F." + L["file_no"]) or f.get("file_no") == L["file_no"].split("No.", 1)[-1]
+    got["deadline"] += f.get("deadline") == L["deadline"]
+    got["sender"] += (f.get("sender_parent"), f.get("sender_office")) == (L["sender_parent"], L["sender_office"])
+check("letters: intent of 100 letters >= 95", got["intent"] >= 95, got)
+check("letters: file no., sender, deadline >= 95", min(got["file_no"], got["sender"], got["deadline"]) >= 95, got)
+dl = letters.deadline("Replies may be furnished within six weeks, latest by 30.11.2026.", T)
+check("letters: 'latest by' wins over 'within six weeks'", dl == "2026-11-30", dl)
+check("letters: 'within a fortnight'", letters.deadline("reply within a fortnight", T) == "2026-11-02")
+f = {"sender_parent": "Ministry of Finance", "sender_office": "Department of Expenditure", "date": "2026-10-01", "format": "Office Memorandum",
+     "subject": "Rationalisation of: expenditure / economy?", "file_no": "7(2)/E.Coord-I/2026"}
+check("letters: folder per correspondent", letters.correspondent(f) == "Ministry of Finance - Department of Expenditure")
+check("letters: safe file name", letters.file_name(f) == "2026-10-01 - OM - Rationalisation of- expenditure - economy - 7(2)-E.Coord-I-2026.pdf",
+      letters.file_name(f))
+con = sqlite3.connect(":memory:")
+con.row_factory = sqlite3.Row
+con.executescript(letters.SCHEMA)
+store = tempfile.mkdtemp()
+L = next(x for x in GL if x["intent"] == "meeting" and x["format"] == "Office Memorandum")
+pdf = govletters.render_pdf(L)
+r1, new1 = letters.ingest(con, "E1", pdf, "e-Office", "http://e/1", "1.pdf", store, T)
+r2, new2 = letters.ingest(con, "E1", pdf, "e-Office", "http://e/1", "1.pdf", store, T)
+check("letters: same PDF filed once", new1 and not new2 and r1["id"] == r2["id"])
+check("letters: options, recommended first, a polite regret", r1["options"][0]["recommended"] and
+      any(o["id"] == "regret" for o in r1["options"]))
+d = letters.draft_reply(json.loads(con.execute("SELECT fields FROM letters").fetchone()[0]), "meeting", "regret", "", {"name": "Ravi Kumar"},
+                        T, "A-1/2026")
+check("letters: OM answered with an OM that cites it", d["kind"] == "OM" and "OFFICE MEMORANDUM" in d["text"]
+      and L["file_no"].split("No.", 1)[-1] in d["text"] and "prior official engagements" in d["text"], d["text"][:300])
+D = next(x for x in GL if x["format"] == "D.O. letter")
+fd = letters.parse(letters.pdf_text(govletters.render_pdf(D)), T)
+dd = letters.draft_reply(fd, letters.classify(fd)[0], letters.OPTIONS[letters.classify(fd)[0]][0][0], "", {"name": "Ravi Kumar"}, T, "A-2/2026")
+check("letters: D.O. answered with a D.O. (Dear .., Yours sincerely)", dd["kind"] == "DO" and "Yours sincerely" in dd["text"]
+      and dd["text"].count("Dear ") == 1)
+check("letters: Word file", letters.to_docx(d["lines"])[:2] == b"PK")
+check("letters: register CSV", "What it asks" in letters.register_csv([r1]) and r1["folder"] in letters.register_csv([r1]))
+
 print(f"\n{sum(results)}/{len(results)} unit checks passed")
 sys.exit(0 if all(results) else 1)

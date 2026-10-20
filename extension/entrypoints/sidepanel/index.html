@@ -45,6 +45,7 @@
       <nav class="tabs">
         <button data-tab="assistant" class="active" title="Assistant"><i class="ic ic-chat"></i><span>Assistant</span></button>
         <button data-tab="comms" title="Communications"><i class="ic ic-mail"></i><span>Comms</span></button>
+        <button data-tab="letters" title="Letters received (e-Office) and replies"><i class="ic ic-doc"></i><span>Letters</span></button>
         <button data-tab="history" title="History"><i class="ic ic-history"></i><span>History</span></button>
         <button data-tab="profile" title="My details"><i class="ic ic-user"></i><span>Me</span></button>
         <button data-tab="teach" title="Teach"><i class="ic ic-teach"></i><span>Teach</span></button>
@@ -148,6 +149,53 @@
         <div class="comms-body">
           <div id="comms-info" class="tiny muted"></div>
           <div id="comms-results"></div>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------------- letters (e-Office receipts) -->
+      <div id="tab-letters" class="tab comms" hidden>
+        <div class="comms-top">
+          <div class="lt-head">
+            <div>
+              <b>Letters</b> <span id="lt-count" class="muted small"></span>
+              <div id="lt-where" class="tiny muted"></div>
+            </div>
+            <button id="lt-file" type="button" class="small" title="File the letters you downloaded from e-Office">↓ File my downloads</button>
+          </div>
+          <div class="lt-tools">
+            <button id="lt-choose" type="button" class="link small">📁 Choose folder…</button>
+            <button id="lt-tidy" type="button" class="link small">🧹 Tidy a folder…</button>
+            <button id="lt-register" type="button" class="link small">⬇ Register (CSV)</button>
+          </div>
+          <div class="search"><i class="ic ic-search"></i><input id="lt-q" placeholder="Search letters, e.g. Lok Sabha, NOC, Finance" autocomplete="off" /></div>
+          <div class="comms-bar">
+            <div id="lt-status" class="seg">
+              <button type="button" data-s="" class="on">All</button>
+              <button type="button" data-s="todo">To reply <span id="n-todo"></span></button>
+              <button type="button" data-s="drafted">Drafted <span id="n-drafted"></span></button>
+              <button type="button" data-s="filed">Filed <span id="n-filed"></span></button>
+            </div>
+            <button id="lt-all" type="button" class="link small" title="Draft the usual reply for every letter not yet answered">✍ Draft all</button>
+          </div>
+        </div>
+        <div class="comms-body">
+          <div id="lt-info" class="tiny muted"></div>
+          <div id="lt-list"></div>
+          <div id="lt-detail" hidden>
+            <button id="lt-back" type="button" class="link small">‹ All letters</button>
+            <div id="lt-meta"></div>
+            <div class="lt-asks"><div class="tiny muted">What it asks</div><div id="lt-asks"></div></div>
+            <div class="tiny muted" style="margin-top:12px">How do you want to reply?</div>
+            <div id="lt-options" class="lt-options"></div>
+            <textarea id="lt-notes" rows="2" placeholder="Details to put in (names, figures, dates)… optional"></textarea>
+            <label class="radio tiny"><input type="checkbox" id="lt-ai" /> Polish the wording with the AI model (slower)</label>
+            <button id="lt-generate" type="button" class="primary wide">Generate reply</button>
+            <div id="lt-draft" hidden>
+              <div id="lt-preview" class="lt-preview"></div>
+              <div class="row"><button id="lt-save" type="button" class="primary">Save .docx</button><button id="lt-copy" type="button">Copy text</button></div>
+              <div id="lt-saved" class="tiny muted"></div>
+            </div>
+          </div>
         </div>
       </div>
 

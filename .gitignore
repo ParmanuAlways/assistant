@@ -27,3 +27,4 @@ test-results/.chrome-profile/
 **/.chrome-profile/
 eval-results-*.log
 *.bundle
+backend/letters_store/

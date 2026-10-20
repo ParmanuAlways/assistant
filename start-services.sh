@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 LOGS="$ROOT/infra/logs"; mkdir -p "$LOGS"
 
 # Demo hostnames (the sandbox can reset /etc/hosts, so re-add them every start)
-HOSTS="keycloak ai hr llm intranet helpdesk expenses rooms visitors canteen mail legacy"
+HOSTS="keycloak ai hr llm intranet helpdesk expenses rooms visitors canteen mail legacy eoffice"
 for h in $HOSTS; do
   grep -qE "[[:space:]]$h\.office\.local([[:space:]]|$)" /etc/hosts || echo "127.0.0.1 $h.office.local" >> /etc/hosts
 done
@@ -23,7 +23,8 @@ python3 "$ROOT/infra/setup_keycloak.py"
 (cd "$ROOT/portal" && nohup python3 -m uvicorn app:app --host 0.0.0.0 --port 8200 > "$LOGS/portal.log" 2>&1 &)
 (cd "$ROOT/portal" && nohup python3 -m uvicorn intranet:app --host 0.0.0.0 --port 8300 > "$LOGS/intranet.log" 2>&1 &)
 (cd "$ROOT/portal" && nohup python3 -m uvicorn legacy:app --host 0.0.0.0 --port 8500 > "$LOGS/legacy.log" 2>&1 &)
-for u in http://llm.office.local:9100/v1/models http://ai.office.local:8000/api/health http://hr.office.local:8200/ http://intranet.office.local:8300/ http://legacy.office.local:8500/debug/state; do
+(cd "$ROOT/portal" && nohup python3 -m uvicorn eoffice:app --host 0.0.0.0 --port 8600 > "$LOGS/eoffice.log" 2>&1 &)
+for u in http://llm.office.local:9100/v1/models http://ai.office.local:8000/api/health http://hr.office.local:8200/ http://intranet.office.local:8300/ http://legacy.office.local:8500/debug/state http://eoffice.office.local:8600/login; do
   until curl -sf "$u" >/dev/null; do sleep 1; done
 done
 echo "All services up."

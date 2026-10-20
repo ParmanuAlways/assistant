@@ -351,3 +351,43 @@ Docker Hub artifact).
 - The Legacy ERP traps were measured in Chrome; Firefox passed the standard end-to-end suite with the new code.
 - Several failures were found and fixed during this evaluation using these same tasks, so the "after" numbers are
   optimistic for new sites. The regression suite exists to catch the next ones.
+
+
+# Part 5 — Letters from e-Office (20 Oct)
+
+**Test data.** 100 dummy letters (`portal/govletters.py`, fixed seed) from 16 senders (ministries, Lok Sabha
+Secretariat, audit, CVC, two State Governments, ISTM, our own sections), in 7 formats (OM 34, Letter 33, D.O. 14,
+Circular 8, Reminder 4, Office Order 4, Notice 3) and 16 kinds, each kind with several wordings so the reader cannot
+match one fixed sentence. Rendered to PDF and read back from the PDF text.
+
+**Reading (all 100 letters, against the generator's truth):**
+
+| | first version | now |
+|---|---|---|
+| What it asks (16 kinds) | 97 | **100** |
+| File no., date, signatory, format | 100 | **100** |
+| Subject | 99 | **100** |
+| Sender (ministry / department) | 98 / 73 | **100 / 100** |
+| Reply-by date | 90 | **100** |
+
+Fixed along the way: an ATR letter that mentions "minutes of the meeting held on" was taken for a meeting notice
+(ATR is now checked first); offices under a letterhead that is not a known word (e.g. "Economic & Service
+Ministries") were missed (the letterhead block under "Government of …" is now read as a whole); State Government
+letterheads ("Government of Maharashtra") were skipped; a subject wrapping onto a line starting "2026." was cut;
+RTI transfers had no due date (30 days). The generator's own truth was also corrected where the letter text said
+something else ("within 10 days"), and meeting replies are now due before the meeting.
+
+**End to end in Chrome** (`tests/letters-shots.mjs`, Chrome started directly so downloads behave as on a PC), 14/14:
+3 letters downloaded while signed out of the assistant stay as they are; 20 letters downloaded one click at a time
+all land in `Downloads/eOffice/<sender>/` (13 sender folders, matching the truth) with names
+`date - type - subject - file no.pdf`; the Letters tab lists all 20 grouped by sender with due dates; a meeting
+notice offers a polite regret and the reply is drafted as an OM citing their O.M. number and saved as Word next to
+the letter; a second reply uses the user's details; **Draft all** leaves nothing to reply (16 drafted, 4 filed
+as needing none); **File my downloads** then moves the 3 loose letters into their sender folders and lists them.
+
+**Caveats.** The letters are generated, so their wording is more regular than real mail; real letters (scans, odd
+layouts, Hindi or bilingual letters) need testing with your own samples, and scanned PDFs need OCR. Reply templates
+are a starting point until your office's format is put in. The demo e-Office is plain HTTP, for which Chrome holds
+downloads until the user OKs them; the test treats it as secure (a real e-Office is HTTPS). *Choose folder* and *Tidy a
+folder* use the browser's folder picker, which the automated test cannot click, so they are **not tested yet**. Firefox files letters with *File my downloads* (it has no way to rename a download
+as it starts); not re-run in Firefox this round.

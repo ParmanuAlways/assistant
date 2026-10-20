@@ -84,6 +84,38 @@ A chat-style assistant ([screenshots](screenshots/ui), [communications](screensh
   Communication module (`portal/legacy.py`) shows the problem: one long list per box, searchable only by exact
   reference number.
 
+## Letters from e-Office: filed per sender, replies drafted
+
+e-Office shows only a receipt number, the sender and a cut-off subject; the letter itself is a PDF the user downloads.
+The **Letters** tab ([screenshots](screenshots/letters)) takes it from there:
+
+- **Filing.** When the user clicks *Download* in e-Office, the letter is read (as the user, with their own session)
+  and saved straight into its sender's folder, under a name that says what it is:
+  `Downloads/eOffice/Ministry of Finance - Department of Expenditure/2026-10-12 - OM - <subject> - <file no>.pdf`
+  (Chrome). Letters downloaded earlier, or in Firefox: **File my downloads** moves them into the same folders.
+  **Choose folder…** keeps a copy of everything in any folder the user picks (e.g. a shared drive), **Tidy a folder…**
+  sorts a folder of loose PDFs into sender folders, and **Register (CSV)** is the inward register (received,
+  file no., from, what it asks, reply due, status).
+- **What it asks.** Each letter is read for its format (Letter, OM, D.O., Circular, Office Order, Notice, Reminder),
+  file number, date, sender, signatory, subject, the sentence that says what is wanted, and the **reply-by date**
+  ("by 30.10.2026", "within 15 days", "within a fortnight", RTI's 30 days). It is sorted into one of 16 kinds:
+  request for information, comments on a draft, meeting, nomination, ATR, Parliament Question, RTI, audit para,
+  grievance, reminder, vigilance clearance, NOC for deputation, budget, invitation, sanction or circular (for
+  information). The list is grouped by sender, letters still to answer first, overdue ones in red.
+- **Reply.** Open a letter and pick how to answer; the options depend on what it asks, the usual one first, and include
+  saying no diplomatically (e.g. a meeting: *Confirm attendance · Depute another officer · Regret - can't attend ·
+  Request another date*; an NOC: *Grant · Decline diplomatically · Ask for details*). Add names or figures if needed
+  and **Generate**: the reply is drafted in service format (an OM is answered with an OM, a D.O. with a D.O.,
+  otherwise a letter, citing their number and date, addressed to the post) and saved as a Word file next to the
+  letter. *Polish the wording with the AI model* is optional. **Draft all** drafts the usual reply for every letter
+  not yet answered and files the ones that need none (circulars, sanctions).
+- Reading and drafting are rules and templates (instant, offline, predictable); the reply wording and our office's
+  letterhead are in `backend/letters.py` (`OPTIONS`, `OUR_OFFICE`, `draft_reply`) so they can be replaced with the
+  office's own format. Which sites count as e-Office is set in `letterSources` (browser policy).
+- Demo: a dummy e-Office (`portal/eoffice.py`, user `ravi` / `ravi123`) with **100 dummy letters in service format**
+  (`portal/govletters.py`, every page marked DUMMY; all 100 also in [samples/dummy-letters](samples/dummy-letters) with
+  an index, and example replies in [samples/reply-drafts](samples/reply-drafts)). Test: `tests/letters-shots.mjs`.
+
 ## Hard web apps (frames, pop-ups, dialogs, Shadow DOM)
 
 The page reader (`extension/lib/page.ts`) reads **every frame** (framesets, iframes) and **open Shadow DOM**, shows

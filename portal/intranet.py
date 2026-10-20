@@ -122,7 +122,8 @@ def home(request: Request):
         return page(request, "Intranet", "<h2>Acme Intranet</h2><ul>"
                     '<li><a href="http://hr.office.local:8200/">HR Leave Portal</a></li>' + links +
                     '<li><a href="http://mail.office.local:8400/">Webmail</a></li>'
-                    '<li><a href="http://legacy.office.local:8500/">Legacy ERP</a></li></ul>')
+                    '<li><a href="http://legacy.office.local:8500/">Legacy ERP</a></li>'
+                    '<li><a href="http://eoffice.office.local:8600/">e-Office (dummy)</a></li></ul>')
     if r := need_login(request):
         return r
     links = {
