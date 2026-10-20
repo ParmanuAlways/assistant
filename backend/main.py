@@ -21,6 +21,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import agent
+import comms
 import db
 import skills
 
@@ -1179,6 +1180,26 @@ def home(u: User = Depends(current_user)):
             groups.append({"prompt": t["prompt"], "count": 1, "done": int(t["status"] == "completed"), "last": t["started_at"]})
     frequent = sorted(groups, key=lambda g: -g["count"])[:4]   # (groups are newest first; ties stay that way)
     return {"links": list_links(u), "frequent": frequent, "recent": tasks[:5]}
+
+
+# ---------------------------------------------------------------- communications
+
+class CommsSyncIn(BaseModel):
+    source: str
+    items: list[dict]
+
+
+@app.post("/api/comms/sync")
+def comms_sync(body: CommsSyncIn, u: User = Depends(current_user)):
+    """Items the extension read from an office app as the user (their own session)."""
+    n = comms.sync(con, u.emp_id, body.source[:100], body.items[:5000], me_hint=u.emp_id)
+    db.log_event(con, u.emp_id, "comms_synced", {"source": body.source, "items": n})
+    return {"synced": n}
+
+
+@app.get("/api/comms/search")
+def comms_search(q: str = "", folder: str = "", direction: str = "", u: User = Depends(current_user)):
+    return comms.search(con, u.emp_id, q, folder, direction, today())
 
 
 @app.get("/api/admin/playbook-health")

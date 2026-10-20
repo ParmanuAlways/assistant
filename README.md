@@ -63,6 +63,27 @@ playbook (request-specific values become placeholders). **Review it**: the model
 demonstrated values. Then save. Playbooks from non-admins wait for an admin's approval. Only the playbooks
 relevant to a request are given to the model in full.
 
+## The side panel
+
+A chat-style assistant ([screenshots](screenshots/ui), [communications](screenshots/comms)):
+
+- **Home screen** (first thing after sign-in): *Your apps*, the sites the user registered (one click opens them as
+  usual, no AI involved; "Use this page" saves the open page), *You often*, their most frequent requests from history
+  (one tap to reuse), and *Recent* tasks. The assistant also knows the user's saved apps.
+- **Conversation**: the request, a live "working" card (each step with an icon, the model's reasoning in grey),
+  questions with answer chips, a **"Ready to submit?"** card that shows where every value came from (colour-coded:
+  from your request / profile / you told me / ⚠ my guess), and the result with reference numbers.
+- **On the page**: while the assistant works, the page glows softly and a pill says what it is doing.
+- **Comms**: the user's communications (letters, notes, circulars, e-mails) from office apps, sorted into **Sent** /
+  **Received** and topic folders (Leave & HR, IT, Purchase & Finance, Travel, Meetings, Projects, Admin,
+  Circulars), with search in plain words: "letters I sent to Priya about leave last month" becomes
+  *sent · to: Priya · "leave" · Sep 2026*. Matches are highlighted and one click opens the item in the office app.
+  Typing "find the circular about the holiday list" in the chat answers from the same index. Items are read from
+  the office app **as the user** (their own session, read-only) and indexed per user (SQLite full-text search);
+  the apps to read are set in `commsSources` (browser policy, see `public/managed-schema.json`). The demo app's
+  Communication module (`portal/legacy.py`) shows the problem: one long list per box, searchable only by exact
+  reference number.
+
 ## Hard web apps (frames, pop-ups, dialogs, Shadow DOM)
 
 The page reader (`extension/lib/page.ts`) reads **every frame** (framesets, iframes) and **open Shadow DOM**, shows

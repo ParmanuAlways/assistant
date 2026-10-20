@@ -127,7 +127,8 @@ def nav(request: Request):
     menu = {"Requests": [("Travel Request", "/travel"), ("Purchase Request", "/purchase"), ("Upload Timesheet", "/timesheet")],
             "Approvals": [("Purchase Orders", "/approvals")],
             "My Profile": [("Contact Details", "/profile/contact")],
-            "Facilities": [("Seat Booking", "/seats")]}
+            "Facilities": [("Seat Booking", "/seats")],
+            "Communication": [("Inward", "/comms?box=in"), ("Outward", "/comms?box=out")]}
     items = "".join(
         f'<li class="m"><span class="mh">{k} &#9656;</span><ul class="sub">' +
         "".join(f'<li><a href="{u}" target="main">{t}</a></li>' for t, u in v) + "</ul></li>" for k, v in menu.items())
@@ -395,6 +396,111 @@ async def seats_submit(request: Request):
                                    '<p><a href="/seats">Back</a></p></div>')
     STATE["seats"].append(f.get("seat"))
     return doc("Booked", f'<div class="box"><h2>Seat Booking</h2><p class="ok">Seat {html.escape(f.get("seat"))} booked for today.</p></div>')
+
+
+# ---------------------------------------------------------------- Communication (letters, notes, circulars, e-mails)
+# Like many office systems: one long list per box, newest first, 15 per page, and a search box that only finds an
+# exact reference number. Hard to find "what did I send to Priya about leave?" - the assistant fixes that.
+
+def _make_comms():
+    import random
+    rnd = random.Random(7)
+    me = "Ravi Kumar (EMP1042)"
+    people = ["Priya Sharma", "Anita Desai", "Arjun Mehta", "Priyanka Rao", "Pradeep Singh", "HR Department", "IT Service Desk",
+              "Finance Department", "Admin Department", "Travel Desk", "Purchase Section", "Internal Audit"]
+    topics = [
+        ("HR", "Note", "Leave application for {d1}", "Requesting casual leave on {d1} for a family function. Work is handed over to {p2}."),
+        ("HR", "Letter", "Approval of earned leave", "Your earned leave from {d1} to {d2} has been approved by {p}."),
+        ("HR", "Circular", "List of holidays for 2027", "The list of public and restricted holidays for the calendar year 2027 is attached."),
+        ("HR", "Circular", "Revised attendance policy", "From {d1} biometric attendance is mandatory for all staff. Late marks beyond three per month lead to half-day leave."),
+        ("IT", "E-mail", "Laptop replacement request LT-{n4}", "My laptop LT-{n4} has a flickering screen and frequent shutdowns. Requesting a replacement."),
+        ("IT", "E-mail", "VPN access for remote work", "Please enable VPN access for {p2} for the period {d1} to {d2}."),
+        ("IT", "Circular", "Scheduled maintenance of the e-mail server", "The e-mail server will be down on {d1} from 10:00 pm to 2:00 am for maintenance."),
+        ("Purchase", "Note", "Purchase of ergonomic chairs PR-{n4}", "Requesting purchase of {q} ergonomic chairs at INR {amt} each for the Engineering team. Cost centre CC-110."),
+        ("Purchase", "Letter", "Approval of purchase order PO-{n4}", "Purchase order PO-{n4} for INR {amt} from {v} has been approved."),
+        ("Finance", "Note", "Reimbursement of taxi fare", "Claim for taxi fare of INR {amt} for the client visit on {d1}, project PRJ-{n4}."),
+        ("Finance", "Letter", "Budget allocation for Q4", "The Q4 budget for cost centre CC-110 is fixed at INR {big}. Please plan expenditure accordingly."),
+        ("Travel", "Note", "Travel request to {city}", "Requesting approval for travel to {city} from {d1} to {d2} for a client visit."),
+        ("Travel", "Letter", "Travel advance sanctioned", "A travel advance of INR {amt} has been sanctioned for your visit to {city}."),
+        ("Meetings", "E-mail", "Minutes of the sprint planning meeting", "Minutes of the sprint planning held on {d1}: action items assigned to {p2} and {p3}."),
+        ("Meetings", "E-mail", "Audit review meeting on {d1}", "The audit review meeting is scheduled on {d1} at 11:00 in the Tulip room. Please confirm attendance."),
+        ("Projects", "Note", "Status report for project PRJ-{n4}", "Project PRJ-{n4} is 70% complete. The next milestone is due on {d2}."),
+        ("Admin", "Circular", "Fire drill on {d1}", "A fire drill will be held on {d1} at 3:00 pm. All staff must assemble at the parking area."),
+        ("Admin", "Letter", "Allotment of desk B3-114", "Desk B3-114 on the 3rd floor is allotted to you from {d1}."),
+    ]
+    vendors = ["Acme Supplies", "Globex Traders", "Initech Services", "Stark Hardware"]
+    cities = ["Pune", "Mumbai", "Delhi", "Chennai", "Hyderabad"]
+    from datetime import date as _d, timedelta
+    items = []
+    for i in range(150):
+        cat, typ, subj, body = rnd.choice(topics)
+        day = _d(2026, 10, 19) - timedelta(days=rnd.randint(0, 300))
+        d1 = (day + timedelta(days=rnd.randint(1, 20))).strftime("%d %b %Y")
+        d2 = (day + timedelta(days=rnd.randint(21, 40))).strftime("%d %b %Y")
+        p, p2, p3 = rnd.sample(people[:5], 3)
+        f = dict(d1=d1, d2=d2, p=p, p2=p2, p3=p3, n4=rnd.randint(1000, 9999), q=rnd.randint(2, 12), amt=f"{rnd.randint(8, 95) * 100:,}",
+                 big=f"{rnd.randint(10, 90) * 100000:,}", v=rnd.choice(vendors), city=rnd.choice(cities))
+        circular = typ == "Circular"
+        outward = not circular and rnd.random() < 0.45
+        other = rnd.choice(people) if not circular else rnd.choice(["HR Department", "IT Service Desk", "Admin Department"])
+        if subj.startswith("Leave application"):   # Ravi applies to his manager
+            outward, other = True, "Priya Sharma"
+        items.append({
+            "id": 5000 + i, "box": "out" if outward else "in", "type": typ,
+            "ref": f"ACME/{cat.upper()[:3]}/{day.year}/{rnd.randint(100, 999):04d}", "date": day.isoformat(),
+            "from": me if outward else other, "to": other if outward else ("All staff" if circular else me),
+            "cc": rnd.choice(["", "", "Priya Sharma", "HR Department"]),
+            "subject": subj.format(**f), "body": body.format(**f),
+            "attachments": rnd.choice([[], [], ["scan.pdf"], ["annexure.xlsx"]]),
+        })
+    items.sort(key=lambda x: x["date"], reverse=True)
+    return items
+
+
+COMMS = _make_comms()
+
+
+@app.get("/comms", response_class=HTMLResponse)
+def comms_list(request: Request, box: str = "in", page: int = 1, ref: str = ""):
+    if r := login_required(request):
+        return r
+    rows = [c for c in COMMS if c["box"] == box and (not ref or c["ref"] == ref.strip())]
+    per = 15
+    pages = max(1, (len(rows) + per - 1) // per)
+    trs = "".join(f"""<tr><td>{c['date']}</td><td>{html.escape(c['ref'])}</td><td>{c['type']}</td>
+<td>{html.escape(c['to'] if box == 'out' else c['from'])}</td><td><a href="/comms/{c['id']}">{html.escape(c['subject'])}</a></td></tr>"""
+                  for c in rows[(page - 1) * per: page * per])
+    pager = " ".join(f'<b>{i}</b>' if i == page else f'<a href="/comms?box={box}&page={i}">{i}</a>' for i in range(1, pages + 1))
+    return doc("Communication", f"""<div class="box"><h2>Communication - {'Outward' if box == 'out' else 'Inward'}</h2>
+<form method="get" action="/comms"><input type="hidden" name="box" value="{box}">Search by reference no.:
+<input name="ref" value="{html.escape(ref)}" size="24"> <input type="submit" value="Go"> <span style="color:#666">(exact reference number only)</span></form>
+<table class="grid" style="margin-top:8px"><tr><th>Date</th><th>Reference</th><th>Type</th><th>{'To' if box == 'out' else 'From'}</th><th>Subject</th></tr>{trs}</table>
+<p>Page: {pager}</p></div>""")
+
+
+@app.get("/comms/{cid}", response_class=HTMLResponse)
+def comms_item(request: Request, cid: int):
+    if r := login_required(request):
+        return r
+    c = next((x for x in COMMS if x["id"] == cid), None)
+    if not c:
+        return doc("Not found", '<div class="box"><p class="err">No such communication.</p></div>')
+    att = ", ".join(c["attachments"]) or "-"
+    return doc(c["subject"], f"""<div class="box"><h2>{html.escape(c['type'])}: {html.escape(c['subject'])}</h2><table class="form">
+<tr><td>Reference</td><td>{html.escape(c['ref'])}</td></tr><tr><td>Date</td><td>{c['date']}</td></tr>
+<tr><td>From</td><td>{html.escape(c['from'])}</td></tr><tr><td>To</td><td>{html.escape(c['to'])}</td></tr>
+<tr><td>Cc</td><td>{html.escape(c['cc'] or '-')}</td></tr><tr><td>Attachments</td><td>{html.escape(att)}</td></tr></table>
+<p style="border-top:1px solid #ccc;padding-top:8px">{html.escape(c['body'])}</p>
+<p><a href="/comms?box={c['box']}">&laquo; Back to the list</a></p></div>""")
+
+
+@app.get("/api/comms")
+def comms_api(request: Request):
+    """The list the app's own pages are built from, for the signed-in user (read by the assistant as the user)."""
+    if not user(request):
+        return JSONResponse({"error": "not signed in"}, status_code=401)
+    base = str(request.base_url).rstrip("/")
+    return [{**c, "url": f"{base}/?main=/comms/{c['id']}"} for c in COMMS]
 
 
 # ---------------------------------------------------------------- test hooks

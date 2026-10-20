@@ -140,6 +140,30 @@ check("workflow: a field reached through its icon counts as done", st4["cursor"]
 check("workflow: similarity", skills.similarity("raise a travel request to Mumbai for training",
                                                 "raise a travel request to Pune for a client visit") >= 0.6)
 
+# ---- communications: folders, plain-words search
+import comms  # noqa: E402
+import sqlite3  # noqa: E402
+q = comms.parse_query("letters I sent to Priya about leave last month", T)
+check("comms: query parsed into filters", q.get("direction") == "sent" and q.get("type") == "Letter" and q.get("to") == "priya"
+      and q.get("terms") == ["leave"] and q.get("after") == "2026-09-01" and q.get("before") == "2026-09-30", q)
+check("comms: folders", comms.folder_for({"type": "Circular", "subject": "x"}) == "Circulars"
+      and comms.folder_for({"type": "Note", "subject": "Purchase of chairs PR-1234"}) == "Purchase & Finance")
+cdb = sqlite3.connect(":memory:"); cdb.row_factory = sqlite3.Row; cdb.executescript(comms.SCHEMA)
+comms.sync(cdb, "E1", "App", [
+    {"id": 1, "box": "out", "type": "Letter", "date": "2026-09-10", "from": "Ravi", "to": "Priya Sharma", "subject": "Leave on 12 Sep",
+     "body": "Requesting casual leave."},
+    {"id": 2, "box": "in", "type": "Circular", "date": "2026-09-11", "from": "HR Department", "to": "All staff", "subject": "Holiday list",
+     "body": "List of holidays for 2027."},
+    {"id": 3, "box": "out", "type": "Note", "date": "2026-08-01", "from": "Ravi", "to": "Travel Desk", "subject": "Travel request to Pune",
+     "body": "Travel to Pune for a client visit."}])
+r = comms.search(cdb, "E1", "letters I sent to Priya about leave", today=T)
+check("comms: finds the sent letter, highlighted", [x["ext_id"] for x in r["results"]] == ["1"] and "<mark>" in r["results"][0]["snip"], r["results"])
+r = comms.search(cdb, "E1", "travel to Pune", today=T)
+check("comms: a place name is a search word, not a recipient", [x["ext_id"] for x in r["results"]] == ["3"], r["query"])
+r = comms.search(cdb, "E1", "holidays in March", today=T)
+check("comms: nothing in that period -> other dates, said so", r["relaxed"] == "dates" and [x["ext_id"] for x in r["results"]] == ["2"])
+check("comms: counts per box", r["sent"] == 2 and r["received"] == 1)
+
 # ---- vision: the screenshot reaches an OpenAI-compatible server as image_url
 seen = {}
 

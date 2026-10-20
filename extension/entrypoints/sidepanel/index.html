@@ -44,6 +44,7 @@
 
       <nav class="tabs">
         <button data-tab="assistant" class="active" title="Assistant"><i class="ic ic-chat"></i><span>Assistant</span></button>
+        <button data-tab="comms" title="Communications"><i class="ic ic-mail"></i><span>Comms</span></button>
         <button data-tab="history" title="History"><i class="ic ic-history"></i><span>History</span></button>
         <button data-tab="profile" title="My details"><i class="ic ic-user"></i><span>Me</span></button>
         <button data-tab="teach" title="Teach"><i class="ic ic-teach"></i><span>Teach</span></button>
@@ -125,6 +126,29 @@
             <button id="run-btn" type="submit" class="icon-btn send" title="Send"><i class="ic ic-send"></i></button>
           </div>
         </form>
+      </div>
+
+      <!-- ---------------------------------------------------------- communications -->
+      <div id="tab-comms" class="tab comms">
+        <div class="comms-top">
+          <div class="search">
+            <i class="ic ic-search"></i>
+            <input id="comms-q" placeholder="Search, e.g. letters I sent to Priya about leave" autocomplete="off" />
+          </div>
+          <div class="comms-bar">
+            <div id="comms-dir" class="seg">
+              <button type="button" data-dir="" class="on">All</button>
+              <button type="button" data-dir="sent">Sent <span id="n-sent"></span></button>
+              <button type="button" data-dir="received">Received <span id="n-received"></span></button>
+            </div>
+            <button id="comms-sync" type="button" class="link small" title="Read the latest from your office apps">↻ Update</button>
+          </div>
+          <div id="comms-folders" class="folders"></div>
+        </div>
+        <div class="comms-body">
+          <div id="comms-info" class="tiny muted"></div>
+          <div id="comms-results"></div>
+        </div>
       </div>
 
       <!-- ---------------------------------------------------------- history -->

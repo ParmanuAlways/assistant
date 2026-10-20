@@ -17,7 +17,7 @@
   {
     "name": "Keycloak sign-in from the Firefox extension",
     "ok": true,
-    "detail": "Hello, Ravi Kumar (EMP1042)"
+    "detail": "Ravi Kumar EMP1042"
   },
   {
     "name": "Profile filled from the company directory",
@@ -27,12 +27,12 @@
   {
     "name": "Settings: test connection to the model",
     "ok": true,
-    "detail": "\u2705 Connected (127 ms) \u00b7 structured output: JSON schema \u00b7 system role: yes"
+    "detail": "\u2705 Connected (134 ms) \u00b7 structured output: JSON schema \u00b7 system role: yes"
   },
   {
-    "name": "Agent task completed in Firefox (78s)",
+    "name": "Agent task completed in Firefox (79s)",
     "ok": true,
-    "detail": "ick element [13]\nThe page confirms success.\nLeave request LR-1001 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
+    "detail": "ave Request\u201d\n\u2713\nWorked \u00b7 1 step\n21s\n\u25be\n\u2705 Done\nLeave request LR-1001 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
   },
   {
     "name": "Assistant asked for missing details and asked for confirmation",

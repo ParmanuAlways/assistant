@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import { runTask, type Confirmation, type PickedFile } from '../../lib/agent';
 import { act, snapshot } from '../../lib/page';
 import { api, ApiError } from '../../lib/api';
+import { getConfig, type CommsSource } from '../../lib/config';
 import { getAccessToken, login, logout } from '../../lib/auth';
 import { describeEvent, startRecording, stopRecording, type TeachEvent } from '../../lib/teach';
 import { esc, renderTimeline } from '../../lib/timeline';
@@ -67,6 +68,7 @@ document.querySelectorAll<HTMLButtonElement>('nav button').forEach((b) => {
     if (b.dataset.tab === 'profile') loadProfile();
     if (b.dataset.tab === 'settings') loadSettings();
     if (b.dataset.tab === 'teach') loadPlaybooks();
+    if (b.dataset.tab === 'comms') openComms();
   };
 });
 
@@ -77,6 +79,7 @@ const SUGGESTIONS = [
   ['🛠️', 'Raise an IT ticket', 'Raise an IT ticket: my laptop screen keeps flickering. It is urgent.'],
   ['📅', 'Book a meeting room', 'Book a meeting room for 6 people tomorrow from 3 pm to 4 pm for Sprint planning.'],
   ['✈️', 'Request travel', 'In the Legacy ERP, raise a travel request to Pune from 21 Oct 2026 to 23 Oct 2026 for a client visit.'],
+  ['📨', 'Find a communication', 'Find the letters I sent to Priya about leave'],
 ];
 
 // ---------------------------------------------------------------- home screen (first thing after sign-in)
@@ -362,6 +365,10 @@ $('prompt-form').onsubmit = async (e) => {
   $<HTMLTextAreaElement>('prompt').value = '';
   autogrow();
   log(prompt, 'user');
+  if (COMMS_SEARCH.test(prompt) && COMMS_WORDS.test(prompt)) {   // a search, not a task: no need to drive the browser
+    await answerCommsSearch(prompt);
+    return;
+  }
   stopped = false;
   $('run-btn').hidden = true;
   $('stop-btn').hidden = false;
@@ -388,6 +395,164 @@ $('prompt').addEventListener('keydown', (e) => {
     $<HTMLFormElement>('prompt-form').requestSubmit();
   }
 });
+
+// ---------------------------------------------------------------- communications
+
+const comms = { q: '', dir: '', folder: '', lastSync: 0 };
+const COMM_ICON: Record<string, string> = { Letter: '✉️', Note: '📝', Circular: '📢', 'E-mail': '📧' };
+
+// The office app's list, read as the user: directly (the extension may use the user's session for sites it is
+// allowed on), else from inside an open tab of that site
+async function readAsUser(src: CommsSource): Promise<any[] | null> {
+  try {
+    const r = await fetch(src.listUrl, { credentials: 'include' });
+    if (r.ok) return await r.json();
+  } catch {}
+  const origin = new URL(src.listUrl).origin;
+  for (const t of await browser.tabs.query({ url: `${origin}/*` })) {
+    const [res] = await browser.scripting.executeScript({
+      target: { tabId: t.id! },
+      func: async (u: string) => {
+        const x = await fetch(u, { credentials: 'include' });
+        return x.ok ? await x.json() : null;
+      },
+      args: [src.listUrl],
+    }).catch(() => [null as any]);
+    if (res?.result) return res.result;
+  }
+  return null;
+}
+
+async function syncComms() {
+  $('comms-info').textContent = 'Reading your communications…';
+  const problems: string[] = [];
+  let total = 0;
+  for (const src of (await getConfig()).commsSources) {
+    const items = await readAsUser(src);
+    if (!items) {
+      problems.push(src.name);
+      continue;
+    }
+    total += (await api('/api/comms/sync', 'POST', { source: src.name, items })).synced;
+  }
+  comms.lastSync = Date.now();
+  await searchComms();
+  if (problems.length) {
+    const src = (await getConfig()).commsSources.find((x) => x.name === problems[0])!;
+    $('comms-info').innerHTML = `Sign in to <a href="#" id="comms-signin">${esc(problems.join(', '))}</a> so I can read your communications, ` +
+      'then press ↻ Update.';
+    $('comms-signin').onclick = (e) => {
+      e.preventDefault();
+      browser.tabs.create({ url: src.signInUrl });
+    };
+  } else if (total) {
+    $('comms-info').dataset.synced = `Updated just now · ${total} items`;
+  }
+}
+
+function commCard(c: any) {
+  const snip = esc(c.snip || '').replace(/&lt;mark&gt;/g, '<mark>').replace(/&lt;\/mark&gt;/g, '</mark>');
+  const who = c.direction === 'sent' ? `to ${c.recipients}` : `from ${c.sender}`;
+  const day = new Date(c.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  return `<a class="comm" data-url="${esc(c.url)}" href="${esc(c.url)}">` +
+    `<div class="l1"><span class="dir ${c.direction}">${c.direction === 'sent' ? '↗ Sent' : '↙ Received'}</span>` +
+    `<span class="ty">${COMM_ICON[c.type] || '•'} ${esc(c.type)}</span><span>${esc(c.folder)}</span><span class="dt">${esc(day)}</span></div>` +
+    `<div class="sj">${esc(c.subject)}</div><div class="sn">${esc(who)} — ${snip}</div>` +
+    `<div class="rf">${esc(c.ref)}${c.attachments?.length ? ` · 📎 ${esc(c.attachments.join(', '))}` : ''}</div></a>`;
+}
+
+function wireCards(root: HTMLElement) {
+  root.querySelectorAll<HTMLAnchorElement>('.comm').forEach((a) => {
+    a.onclick = (e) => {
+      e.preventDefault();
+      if (a.dataset.url) browser.tabs.create({ url: a.dataset.url, active: true });   // open it in the office app
+    };
+  });
+}
+
+function filterPills(qf: any) {
+  const p: string[] = [];
+  if (qf.direction) p.push(qf.direction === 'sent' ? 'sent by you' : 'received');
+  if (qf.type) p.push(qf.type);
+  if (qf.to) p.push(`to: ${qf.to}`);
+  if (qf.from) p.push(`from: ${qf.from}`);
+  if (qf.after || qf.before) p.push(qf.after === qf.before ? qf.after : `${qf.after || '…'} → ${qf.before || 'now'}`);
+  for (const t of qf.terms || []) p.push(`“${t}”`);
+  return p.length ? `<div class="pills">${p.map((x) => `<span class="pill">${esc(x)}</span>`).join('')}</div>` : '';
+}
+
+async function searchComms() {
+  const params = new URLSearchParams({ q: comms.q, folder: comms.folder, direction: comms.dir });
+  const r = await api<any>(`/api/comms/search?${params}`);
+  $('n-sent').textContent = r.sent ? String(r.sent) : '';
+  $('n-received').textContent = r.received ? String(r.received) : '';
+  const all = Object.values(r.folders as Record<string, number>).reduce((a, b) => a + b, 0);
+  $('comms-folders').innerHTML = `<button type="button" class="folder ${comms.folder ? '' : 'on'}" data-f="">All<b>${all}</b></button>` +
+    Object.entries(r.folders as Record<string, number>).filter(([, n]) => n > 0)
+      .map(([f, n]) => `<button type="button" class="folder ${comms.folder === f ? 'on' : ''}" data-f="${esc(f)}">${esc(f)}<b>${n}</b></button>`).join('');
+  $('comms-folders').querySelectorAll<HTMLButtonElement>('.folder').forEach((b) => {
+    b.onclick = () => {
+      comms.folder = b.dataset.f || '';
+      searchComms();
+    };
+  });
+  if (!all) {
+    $('comms-results').innerHTML = '<div class="empty">📭<br>No communications yet.<br><span class="small">Press ↻ Update to read them from your office apps.</span></div>';
+    return;
+  }
+  const head = `${r.results.length}${r.results.length >= 30 ? '+' : ''} ${r.results.length === 1 ? 'result' : 'results'}` +
+    (r.relaxed ? ' · nothing in that period, showing other dates' : r.match === 'any word' ? ' · showing close matches' : '') +
+    ($('comms-info').dataset.synced ? ` · ${$('comms-info').dataset.synced}` : '');
+  $('comms-info').innerHTML = esc(head) + (comms.q ? filterPills(r.query) : '');
+  $('comms-results').innerHTML = r.results.length ? r.results.map(commCard).join('')
+    : '<div class="empty">Nothing found. Try fewer words, or another folder.</div>';
+  wireCards($('comms-results'));
+}
+
+let commsTimer: any;
+$('comms-q').addEventListener('input', () => {
+  clearTimeout(commsTimer);
+  commsTimer = setTimeout(() => {
+    comms.q = $<HTMLInputElement>('comms-q').value.trim();
+    searchComms();
+  }, 200);
+});
+$('comms-dir').querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
+  b.onclick = () => {
+    comms.dir = b.dataset.dir || '';
+    $('comms-dir').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+    searchComms();
+  };
+});
+$('comms-sync').onclick = () => syncComms();
+
+async function openComms(q?: string) {
+  if (q !== undefined) {
+    comms.q = q;
+    $<HTMLInputElement>('comms-q').value = q;
+  }
+  if (Date.now() - comms.lastSync > 10 * 60 * 1000) await syncComms();   // keep it fresh when the tab is opened
+  else await searchComms();
+}
+
+// "find the letter I sent to Priya about leave" in the chat: answer from the communications index
+const COMMS_SEARCH = /^\s*(find|search|show|look up|where is|list|which)\b/i;
+const COMMS_WORDS = /\b(letters?|notes?|circulars?|e-?mails?|mails?|memos?|communications?|sent|received)\b/i;
+async function answerCommsSearch(prompt: string) {
+  if (Date.now() - comms.lastSync > 10 * 60 * 1000) await syncComms().catch(() => {});
+  const r = await api<any>(`/api/comms/search?${new URLSearchParams({ q: prompt })}`);
+  const top = r.results.slice(0, 4);
+  const intro = top.length ? `I found ${r.results.length}${r.results.length >= 30 ? '+' : ''} in your communications` +
+    (r.relaxed ? ' (none in that period, so here are other dates)' : '') + ':' : 'I couldn’t find anything like that in your communications.';
+  const row = addRow(`<span class="mark sm"></span><div class="bubble comm-results-bubble"><div>${esc(intro)}</div>${filterPills(r.query)}` +
+    `${top.map(commCard).join('')}${r.results.length > top.length ? '<button type="button" class="link small see-all">See all in Communications →</button>' : ''}</div>`,
+    'row-assistant');
+  wireCards(row);
+  row.querySelector<HTMLButtonElement>('.see-all')?.addEventListener('click', () => {
+    document.querySelector<HTMLButtonElement>('nav button[data-tab=comms]')!.click();
+    openComms(prompt);
+  });
+}
 
 // ---------------------------------------------------------------- history
 
