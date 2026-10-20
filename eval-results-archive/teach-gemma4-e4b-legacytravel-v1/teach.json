@@ -1,0 +1,35 @@
+{
+  "label": "gemma4-e4b-legacytravel",
+  "demo": "legacytravel",
+  "recorded": [
+    "Opened \"Intranet – intranet\" (http://intranet.office.local:8300/)",
+    "Clicked link \"Legacy ERP\"",
+    "Opened \"Sign in - Legacy ERP\" (http://legacy.office.local:8500/login?next=/)",
+    "Typed \"ravi\" into \"User name\"",
+    "Typed \"(hidden)\" into \"Password\"",
+    "Clicked button \"Sign in\"",
+    "Opened \"Legacy ERP\" (http://legacy.office.local:8500/)",
+    "Clicked link \"Travel Request\" in menu \"Requests\"",
+    "Opened \"Legacy ERP\" (http://legacy.office.local:8500/)",
+    "Typed \"Mumbai\" into \"Destination city\"",
+    "Clicked button \"Pick from date\"",
+    "Clicked button \">\" in row \"< October 2026 >\"",
+    "Clicked button \"4\" in row \"1 2 3 4 5 6 7\"",
+    "Picked date \"04-Nov-2026\" for \"From date\"",
+    "Clicked button \"Pick to date\"",
+    "Clicked button \">\" in row \"< November 2026 >\"",
+    "Clicked button \"6\" in row \"6 7 8 9 10 11 12\"",
+    "Chose \"Training\" for \"Purpose\"",
+    "Picked date \"06-Dec-2026\" for \"To date\"",
+    "Clicked link \"Submit\"",
+    "Opened \"Legacy ERP\" (http://legacy.office.local:8500/)"
+  ],
+  "draft": "Start URL: http://intranet.office.local:8300/\n1. Click link \"Legacy ERP\".\n2. On the Sign in - Legacy ERP page, type <user name> into field \"User name\".\n3. Click button \"Sign in\".\n4. Click link \"Travel Request\" in the \"Requests\" menu.\n5. On the Travel Request page, type <destination city> into field \"Destination city\".\n6. Click button \"Pick from date\".\n7. In the calendar, click button \">\" in the table row \"< <month from the request> \".\n8. In the calendar, click button <start day from the request> in the table row \"1 2 3 4 5 6 7\".\n9. Click button \"Pick to date\".\n10. In the calendar, click button \">\" in the table row \"< <month to the request> \".\n11. In the calendar, click button <end day from the request> in the table row \"6 7 8 9 10 11 12\".\n12. Select <purpose from the request> for \"Purpose\".\nClick link \"Submit\".",
+  "quality": {
+    "has_start_url": true,
+    "steps": 13,
+    "copied_demo_values": []
+  },
+  "saved_status": "✅ Saved — waiting for an admin to approve it.",
+  "approved": true
+}

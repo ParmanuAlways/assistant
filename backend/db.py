@@ -45,6 +45,15 @@ CREATE TABLE IF NOT EXISTS admin_policy (
 
 CREATE TABLE IF NOT EXISTS site_playbooks (
   id INTEGER PRIMARY KEY AUTOINCREMENT, site TEXT, task TEXT, steps TEXT, updated_by TEXT, updated_at TEXT);
+
+-- How successful tasks were done (labels and buttons only, no values): replayed for similar requests
+CREATE TABLE IF NOT EXISTS experiences (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, site TEXT, goal TEXT, steps TEXT, task_id TEXT, successes INTEGER DEFAULT 1,
+  failures INTEGER DEFAULT 0, created_at TEXT, last_used TEXT);
+
+-- One row per finished task, for playbook/workflow health
+CREATE TABLE IF NOT EXISTS task_outcomes (
+  task_id TEXT PRIMARY KEY, site TEXT, workflow TEXT, status TEXT, summary TEXT, drift INTEGER DEFAULT 0, ended_at TEXT);
 """
 
 
@@ -80,13 +89,15 @@ def init(default_model_url: str, default_model_name: str | None = None):
     for table, col, ddl in (("site_playbooks", "status", "TEXT DEFAULT 'active'"),
                             ("site_playbooks", "source", "TEXT DEFAULT 'seed'"),
                             ("model_providers", "json_mode", "TEXT DEFAULT 'auto'"),        # auto|schema|object|none
-                            ("model_providers", "context_tokens", "INTEGER DEFAULT 8192")):
+                            ("model_providers", "context_tokens", "INTEGER DEFAULT 8192"),
+                            ("site_playbooks", "macro", "TEXT")):
         if col not in [r[1] for r in con.execute(f"PRAGMA table_info({table})")]:
             con.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
     if not con.execute("SELECT 1 FROM admin_policy").fetchone():
         con.execute("INSERT INTO admin_policy VALUES (1, 0, ?, ?, 25)", (
             json.dumps(["*.office.local", "127.0.0.1", "localhost", "10.0.0.0/8"]),
             json.dumps(["*.office.local"])))
+        con.execute("UPDATE admin_policy SET max_steps=40")
     if not con.execute("SELECT 1 FROM model_providers").fetchone():
         con.execute("""INSERT INTO model_providers (name, base_url, model, is_default, note)
             VALUES (?,?,?,1,?)""", (f"{default_model_name} (llama.cpp, CPU)" if default_model_name else
@@ -106,6 +117,8 @@ def init(default_model_url: str, default_model_name: str | None = None):
             ("visitors.office.local", "Visitor passes", "Start URL: http://visitors.office.local:8300/  Register Visitor."),
             ("canteen.office.local", "Canteen food orders", "Start URL: http://canteen.office.local:8300/  Order Food."),
             ("mail.office.local", "Email (webmail)", "Start URL: http://mail.office.local:8400/  Read, search, send, reply, forward and move emails."),
+            ("legacy.office.local", "Legacy ERP: travel requests, purchase requests, PO approvals, timesheet upload, contact details",
+             "Start URL: http://legacy.office.local:8500/  Has its own sign-in page. Menu on the left (Requests, Approvals, My Profile)."),
         ]:
             con.execute("INSERT INTO site_playbooks (site, task, steps, updated_by, updated_at) VALUES (?,?,?,?,?)",
                         (site, task, steps, "seed", now()))

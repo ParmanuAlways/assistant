@@ -27,10 +27,10 @@
   {
     "name": "Settings: test connection to the model",
     "ok": true,
-    "detail": "\u2705 Connected (164 ms) \u00b7 structured output: JSON schema \u00b7 system role: yes"
+    "detail": "\u2705 Connected (127 ms) \u00b7 structured output: JSON schema \u00b7 system role: yes"
   },
   {
-    "name": "Agent task completed in Firefox (16s)",
+    "name": "Agent task completed in Firefox (78s)",
     "ok": true,
     "detail": "ick element [13]\nThe page confirms success.\nLeave request LR-1001 submitted successfully. 3 day(s) of Casual Leave from 2026-10-19 to 2026-10-21. Status: Pending (sent to Priya Sharma). View My Leaves"
   },
@@ -42,12 +42,12 @@
   {
     "name": "Leave really saved with the right details",
     "ok": true,
-    "detail": "{\"id\": 1, \"ref\": \"LR-1001\", \"username\": \"ravi\", \"emp_id\": \"EMP1042\", \"leave_type\": \"Casual Leave\", \"from_date\": \"2026-10-19\", \"to_date\": \"2026-10-21\", \"days\": 3, \"reason\": \"family function\", \"emergency_contact\": \"9123456780\", \"manager\": \"Priya Sharma\", \"status\": \"Pending\", \"created_at\": \"2026-10-19 "
+    "detail": "{\"id\": 1, \"ref\": \"LR-1001\", \"username\": \"ravi\", \"emp_id\": \"EMP1042\", \"leave_type\": \"Casual Leave\", \"from_date\": \"2026-10-19\", \"to_date\": \"2026-10-21\", \"days\": 3, \"reason\": \"family function\", \"emergency_contact\": \"9123456780\", \"manager\": \"Priya Sharma\", \"status\": \"Pending\", \"created_at\": \"2026-10-20 "
   },
   {
     "name": "History timeline with audit events",
     "ok": true,
-    "detail": "action_result, confirmation, model_action, page_snapshot, profile_learned, screenshot, task_finished, user_answer, user_message"
+    "detail": "action_result, confirmation, experience_saved, model_action, page_snapshot, plan, profile_learned, screenshot, task_finished, user_answer, user_message"
   },
   {
     "name": "Screenshots captured in Firefox and shown",
@@ -67,6 +67,6 @@
   {
     "name": "Auditor dashboard + integrity check in Firefox",
     "ok": true,
-    "detail": "\u2714 Chain valid \u2014 44 events checked"
+    "detail": "\u2714 Chain valid \u2014 46 events checked"
   }
 ]

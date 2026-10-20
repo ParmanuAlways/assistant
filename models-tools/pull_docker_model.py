@@ -19,7 +19,8 @@ for l in layers:
 gguf = [l for l in layers if "weight" in l["mediaType"] or "gguf" in l["mediaType"]]
 if "--list" in sys.argv:
     sys.exit()
-layer = max(gguf, key=lambda l: l["size"])
+# --smallest: the second weight file, e.g. the vision projector (mmproj) of multimodal models
+layer = min(gguf, key=lambda l: l["size"]) if "--smallest" in sys.argv else max(gguf, key=lambda l: l["size"])
 r = get(f"https://registry-1.docker.io/v2/{repo}/blobs/{layer['digest']}", H)
 done = 0
 with open(out + ".part", "wb") as f:

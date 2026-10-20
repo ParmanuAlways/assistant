@@ -1,10 +1,26 @@
 // Records pop-up messages (toasts, alerts, status lines) from the moment a page starts loading, so the
 // assistant can see confirmations like "Message sent successfully" even after they fade away.
 // Shares the extension's isolated world with the page reader (lib/page.ts reads window.__agentNotices).
+// On Firefox also puts the dialog hook (lib/page.ts installDialogHook) into the page so alert()/confirm() pop-ups don't
+// block the assistant; it only acts while a task is running.
+import { installDialogHook } from '../lib/page';
+import { recorderInPage } from '../lib/teach';
+
 export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_start',
+  allFrames: true,
   main() {
+    if (import.meta.env.FIREFOX) {   // Chrome runs the hook as a MAIN-world content script instead
+      try {
+        const s = document.createElement('script');
+        s.textContent = `(${installDialogHook.toString()})()`;
+        (document.head || document.documentElement).appendChild(s);
+        s.remove();
+      } catch {}
+    }
+    // Teach mode: frames that load during a recording (e.g. a frameset's main frame) join the recording
+    browser.runtime.sendMessage({ type: 'teach-ping' }).then((r: any) => r?.recording && recorderInPage()).catch(() => {});
     const w = window as any;
     if (w.__agentNotices) return;
     // Keep recent messages across page loads in this tab: many apps show "Message sent" on the page that

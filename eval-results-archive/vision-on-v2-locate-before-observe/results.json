@@ -1,0 +1,78 @@
+{
+  "label": "vision-on",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "V1-seat#1",
+      "site": "Legacy: seat map on a canvas (needs a screenshot)",
+      "goal": "In the Legacy ERP, book seat C3 on the seat map.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/1",
+      "field_ratio": 0,
+      "fields": {
+        "seat": {
+          "got": null,
+          "want": "C3"
+        }
+      },
+      "seconds": 602,
+      "steps": 18,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "ion link [7] labeled 'Seat Booking' under the 'FacililClick element [7]The goal is to book seat C3 on the seat map. I am currently on the Seat Booking page (main frame). Element [8] is the canvas containing the seat map. I need to Click element [8]Stopped: the assistant kept repeating the same step."
+    },
+    {
+      "task": "V1-seat#2",
+      "site": "Legacy: seat map on a canvas (needs a screenshot)",
+      "goal": "In the Legacy ERP, book seat C3 on the seat map.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/1",
+      "field_ratio": 0,
+      "fields": {
+        "seat": {
+          "got": null,
+          "want": "C3"
+        }
+      },
+      "seconds": 519,
+      "steps": 17,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "cy ERP. Element [7] is 'Seat Booking' under the 'FacilClick element [7]The goal is to book seat C3 on the seat map. I am currently on the Legacy ERP page, and the main frame contains a canvas [8] which represents the seat map. I'veClick element [8]Stopped: the assistant kept repeating the same step."
+    }
+  ]
+}

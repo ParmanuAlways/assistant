@@ -14,6 +14,36 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Demonstrations deliberately use DIFFERENT values from the evaluation tasks
 const DEMOS = {
+  // Legacy ERP: frames, hover menu, calendar widget, postback link with a native confirm()
+  legacytravel: {
+    name: 'Raise a travel request in the Legacy ERP',
+    demoValues: ['Mumbai', 'Training', '04-Nov', '06-Nov'],
+    async run(p) {
+      await fetch('http://legacy.office.local:8500/debug/reset', { method: 'POST' });
+      p.on('dialog', (d) => d.accept());                // the person clicks OK on "Submit travel request...?"
+      await p.click('text=Legacy ERP');
+      await p.fill('#login_user', 'ravi');               // the person signs in (not recorded: passwords never are)
+      await p.fill('#login_pass', 'ravi123');
+      await p.click('#login_btn');
+      await p.waitForSelector('frame[name=main]');
+      await sleep(800);
+      const nav = p.frame({ name: 'nav' });
+      await nav.hover('text=Requests');
+      await nav.click('text=Travel Request');
+      await sleep(1000);
+      const main = p.frame({ name: 'main' });
+      await main.fill('#dest', 'Mumbai');
+      await main.click('img[alt="Pick from date"]');
+      await main.click('#cal td >> text=">"');
+      await main.click('#cal td:text-is("4")');
+      await main.click('img[alt="Pick to date"]');
+      await main.click('#cal td >> text=">"');
+      await main.click('#cal td:text-is("6")');
+      await main.selectOption('select[name=purpose]', 'Training');
+      await main.click('#btnSubmit');
+      await main.waitForSelector('text=submitted for approval');
+    },
+  },
   canteen: {
     name: 'Order food from the canteen',
     demoValues: ['A1-001', 'Masala Dosa', 'Filter Coffee', 'Snacks'],

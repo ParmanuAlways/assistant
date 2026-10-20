@@ -262,6 +262,11 @@ try {
   const fallbackEvents = JSON.parse(sql(`SELECT payload FROM events WHERE task_id='${t4id}' AND event_type='model_error'`));
   check('When the chosen model is down, it falls back to the default and logs it', t4.status === 'completed' && fallbackEvents.length > 0,
     fallbackEvents[0]?.[0]?.slice(0, 160));
+  // The rule-based stand-in clicks Submit on the form left over from the declined task (10-12 Dec): the pre-submit
+  // verifier must notice that the request's date (5 Jan 2027) is not on the form, and tell the user
+  const t4conf = JSON.parse(sql(`SELECT payload FROM events WHERE task_id='${t4id}' AND event_type='confirmation'`)).map((r) => JSON.parse(r[0]));
+  check('Pre-submit verifier flags a form that does not match the request', t4conf.some((c) => (c.checks || []).some((x) => x.includes('05 Jan 2027'))),
+    JSON.stringify(t4conf.map((c) => c.checks)).slice(0, 200));
   await tab('settings');
   await panel.check('input[name=mode][value=list]');
   await panel.click('#save-btn');

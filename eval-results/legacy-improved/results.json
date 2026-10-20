@@ -1,0 +1,241 @@
+{
+  "label": "legacy-improved",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "L1-travel",
+      "site": "Legacy: travel (frames, hover menu, calendar, postback+confirm)",
+      "goal": "In the Legacy ERP, raise a travel request to Pune from 21 Oct 2026 to 23 Oct 2026 for a client visit.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "4/4",
+      "field_ratio": 1,
+      "fields": {
+        "destination": {
+          "got": "Pune",
+          "want": "Pune",
+          "ok": true
+        },
+        "from_date": {
+          "got": "2026-10-21",
+          "want": "2026-10-21",
+          "ok": true
+        },
+        "to_date": {
+          "got": "2026-10-23",
+          "want": "2026-10-23",
+          "ok": true
+        },
+        "purpose": {
+          "got": "Client visit",
+          "want": "Client visit",
+          "ok": true
+        }
+      },
+      "seconds": 353,
+      "steps": 10,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "k element [14]The previous steps successfully filled out and submitted the travel request. The current page shows a confirmation message: 'Travel Request Travel request TR-30Travel request TR-3001 for Pune from 21 Oct 2026 to 23 Oct 2026 for a client visit has been successfully raised and submitted."
+    },
+    {
+      "task": "L2-purchase",
+      "site": "Legacy: purchase (autocomplete, pop-up lookup, masked price, alert)",
+      "goal": "In the Legacy ERP, create a purchase request for 2 ergonomic chairs at 8,500 rupees each, cost centre Engineering - Bangalore, approver Priya Sharma.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "5/5",
+      "field_ratio": 1,
+      "fields": {
+        "item": {
+          "got": "ergonomic chairs",
+          "want": "chair",
+          "ok": true
+        },
+        "qty": {
+          "got": "2",
+          "want": "2",
+          "ok": true
+        },
+        "price": {
+          "got": "8500",
+          "want": "8500",
+          "ok": true
+        },
+        "cost_centre": {
+          "got": "CC-110",
+          "want": "CC-110",
+          "ok": true
+        },
+        "approver": {
+          "got": "EMP0900",
+          "want": "EMP0900",
+          "ok": true
+        }
+      },
+      "seconds": 458,
+      "steps": 14,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 2,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "ed the purchase request. The current page shows a confirmation message: \"Purchase request PR-4001 created and sent for a p\nPurchase request PR-4001 for 2 ergonomic chairs at 8,500 rupees each, cost centre Engineering - Bangalore, approver Priya Sharma has been successfully created in the Legacy ERP."
+    },
+    {
+      "task": "L3-approve",
+      "site": "Legacy: approve PO (pagination, shadow DOM row buttons, confirm)",
+      "goal": "In the Legacy ERP, approve purchase order PO-1077.",
+      "agent_status": "cancelled",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/2",
+      "field_ratio": 0,
+      "fields": {
+        "approved": {
+          "got": null,
+          "want": "PO-1077",
+          "ok": false
+        },
+        "rejected": {
+          "got": null,
+          "want": "",
+          "ok": false
+        }
+      },
+      "seconds": 168,
+      "steps": 4,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "declined": 1,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [
+        "Your request mentions 1077, but the selected row (PO-1057 Initech Services 67,667 Pending) does not show it."
+      ],
+      "summary": "RP homepage. The navigation menu shows 'Approvals' with element [5]. I need to gotoClick element [5]The user pointed out that PO-1057 is not PO-1077. I need to find PO-1077. The current page shows PO-1059 as the last item, and there are pagination links (2, 3,DeclinedNot submitted. Nothing was sent."
+    },
+    {
+      "task": "L4-upload",
+      "site": "Legacy: timesheet (file upload, alert)",
+      "goal": "In the Legacy ERP, upload my signed timesheet for September 2026.",
+      "agent_status": "completed",
+      "submitted": true,
+      "success": true,
+      "field_score": "2/2",
+      "field_ratio": 1,
+      "fields": {
+        "month": {
+          "got": "September 2026",
+          "want": "September 2026",
+          "ok": true
+        },
+        "pdf": {
+          "got": true,
+          "want": "true",
+          "ok": true
+        }
+      },
+      "seconds": 237,
+      "steps": 7,
+      "questions": [
+        "which file to ask the user for"
+      ],
+      "answers": [
+        "(signed in)",
+        "(file attached)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "ned timesheet for September 2026 in the Legacy ERP. The previous steps successfully navigated to the timesheet upload page, set '9The signed timesheet for September 2026 was successfully uploaded to the Legacy ERP. The confirmation message 'Timesheet uploaded successfully' was displayed on the page."
+    },
+    {
+      "task": "L5-contact",
+      "site": "Legacy: contact (session expires mid-task, masked input)",
+      "goal": "In the Legacy ERP, change my mobile number to 9123400000.",
+      "agent_status": "unverified",
+      "submitted": true,
+      "success": true,
+      "field_score": "2/2",
+      "field_ratio": 1,
+      "fields": {
+        "mobile": {
+          "got": "9123400000",
+          "want": "9123400000",
+          "ok": true
+        },
+        "landline": {
+          "got": "",
+          "want": "",
+          "ok": true
+        }
+      },
+      "seconds": 235,
+      "steps": 7,
+      "questions": [],
+      "answers": [
+        "(signed in)",
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 1,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "workflow": null,
+      "replayed_steps": 0,
+      "verifier_mismatches": [],
+      "summary": "mber to 9123400000. In previous steps, I navigated to the contact details, typed the new number into the 'Mobile' field (ID Successfully updated the mobile number to 9123400000 in the Legacy ERP contact details. — note: the site did not show a confirmation message, please check that it went through."
+    }
+  ]
+}

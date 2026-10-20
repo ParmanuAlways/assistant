@@ -30,6 +30,17 @@ async function loadActivity() {
     .join('');
 }
 
+async function loadHealth() {
+  const rows = await api<any[]>('/api/admin/playbook-health');
+  $('health').innerHTML = '<tr><th>Site / workflow</th><th>Status</th><th>Runs</th><th>Done</th><th>Last 5</th><th>Last problem</th></tr>' +
+    (rows.length ? rows.map((h) => `<tr><td>${esc(h.name)}</td>` +
+      `<td><span class="badge ${h.status === 'ok' ? 'completed' : 'failed'}">${esc(h.status)}</span></td>` +
+      `<td>${h.runs}</td><td>${h.completed}</td><td class="small">${esc(h.recent.join(', '))}</td>` +
+      `<td class="small">${esc(h.last_problem ? `${h.last_problem.when.slice(0, 16).replace('T', ' ')} ${h.last_problem.status}: ${h.last_problem.summary}` : '')}` +
+      (h.drift ? ` <b>· workflow stopped matching the site ${h.drift}×</b>` : '') + '</td></tr>').join('')
+      : '<tr><td colspan="6" class="muted">No finished tasks yet.</td></tr>');
+}
+
 $('verify-btn').onclick = async () => {
   const r = await api('/api/audit/verify');
   $('verify-result').innerHTML = r.ok
@@ -56,7 +67,7 @@ $('f-apply').onclick = loadTasks;
     $('who').textContent = `${me.name} (${me.emp_id})`;
     if (!me.roles.includes('auditor')) throw new Error('Only users with the auditor role can open this page.');
     $('main').hidden = false;
-    await Promise.all([loadTasks(), loadActivity()]);
+    await Promise.all([loadTasks(), loadActivity(), loadHealth()]);
   } catch (e: any) {
     $('denied').hidden = false;
     $('denied').textContent = e.message;

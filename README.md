@@ -20,8 +20,8 @@ tests/e2e.mjs   end-to-end test driving real Chromium
 
 ```bash
 # hostnames used by the demo
-echo "127.0.0.1 keycloak.office.local ai.office.local hr.office.local llm.office.local" | sudo tee -a /etc/hosts
-pip install fastapi uvicorn httpx pyjwt cryptography python-multipart itsdangerous
+echo "127.0.0.1 keycloak.office.local ai.office.local hr.office.local llm.office.local legacy.office.local" | sudo tee -a /etc/hosts
+pip install fastapi uvicorn httpx pyjwt cryptography python-multipart itsdangerous pillow
 ./start-services.sh                     # Keycloak :8080, model :9100, backend :8000, portal :8200
 cd extension && npm install && npm run build   # → .output/chrome-mv3 (load unpacked in chrome://extensions)
 cd ../tests && npm install && xvfb-run -a node e2e.mjs
@@ -62,6 +62,45 @@ Side panel → **Teach**: name the workflow, *Start recording*, do the task once
 playbook (request-specific values become placeholders). **Review it**: the model tends to copy the
 demonstrated values. Then save. Playbooks from non-admins wait for an admin's approval. Only the playbooks
 relevant to a request are given to the model in full.
+
+## Hard web apps (frames, pop-ups, dialogs, Shadow DOM)
+
+The page reader (`extension/lib/page.ts`) reads **every frame** (framesets, iframes) and **open Shadow DOM**, shows
+**which table row** a button is in, lists links hidden in **hover menus**, and finds home-made clickable things
+(calendar days, suggestion lists, `onclick` cells). Native **`alert()`/`confirm()`** pop-ups are answered by a hook in
+the page (only while a task runs): alerts become messages the model sees, and `confirm()` says OK only for an action
+the user approved in the side panel (otherwise the user is asked first, with the site's own question). **Pop-up
+windows** (lookups) are followed and the assistant returns when they close. Besides click/type/select the model can use
+`pick_date` (drives calendar widgets), `autocomplete` (types and picks the suggestion), `fill_form` (many fields in
+one step), `upload` (the user picks the file in the side panel; the assistant never reads files by itself) and
+`hover`.
+
+Before every final submit the confirmation shows **where each value came from** (your request, your profile, your
+answer, already on the page, or ⚠ chosen by the assistant) and a **pre-submit check** compares the form with the
+request (dates, amounts, IDs, the table row). Mismatches go back to the model once, then to the user.
+
+Test site: `portal/legacy.py` ("Legacy ERP", `legacy.office.local:8500`), tasks `TASKSET=legacy` in `tests/eval.mjs`.
+
+## Learning and replay
+
+- **Taught workflows are replayed:** a playbook saved from Teach mode keeps the recording. Steps that are the same
+  every time (menus, "Travel Request", "Submit") run directly without the model; value steps go to the model with
+  the workflow as a hint. A step that is no longer on the page hands control back to the model.
+- **Learning from successful runs:** after a verified success the backend stores *how* it was done (buttons and
+  field labels, never values) and replays it for similar requests. Admins: `GET/DELETE /api/admin/experiences`.
+- **Plan, act, check:** a short plan at the start (when no workflow is known), the effect of each action
+  ("now on …", "errors shown: …", "the page did not change") in the history, recovery from wrong element numbers,
+  and resuming after the site signs the user out mid-task.
+- **Vision fallback:** when stuck (loop, repeated failures) the extension sends a screenshot with numbered boxes;
+  models marked `supports_vision` (or `AGENT_VISION=1`) get it and may answer `click_xy` (always confirmed by the user).
+- **Health:** the audit dashboard shows success per site and per replayed workflow, and flags workflows that stopped
+  matching their site (`GET /api/admin/playbook-health`).
+
+## Regression testing
+
+`python3 tests/unit_backend.py` (fast checks), `tests/run-regression.sh` (unit + end-to-end with the stand-in), or
+`tests/run-regression.sh gemma4-e4b <reference>` to also run the intranet and Legacy ERP sets with a model and compare
+them task by task with a reference run (`tests/regress.py`).
 
 ## Webmail test site
 

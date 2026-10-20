@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
-import { runTask, type Confirmation } from '../../lib/agent';
+import { runTask, type Confirmation, type PickedFile } from '../../lib/agent';
+import { act, snapshot } from '../../lib/page';
 import { api, ApiError } from '../../lib/api';
 import { getAccessToken, login, logout } from '../../lib/auth';
 import { describeEvent, startRecording, stopRecording, type TeachEvent } from '../../lib/teach';
@@ -79,6 +80,7 @@ function ask(question: string, options?: string[], isUserAction?: boolean): Prom
     const input = $<HTMLInputElement>('ask-input');
     input.value = '';
     input.hidden = !!isUserAction || !!options?.length;
+    $('ask-file').hidden = true;
     $('ask-send').textContent = isUserAction ? 'Continue' : 'Send';
     $('ask-send').hidden = !!options?.length;
     $('ask-options').innerHTML = '';
@@ -100,12 +102,46 @@ function ask(question: string, options?: string[], isUserAction?: boolean): Prom
   });
 }
 
+// The assistant needs a file from the user's computer (it can never read files by itself)
+function askFile(question: string): Promise<PickedFile | null> {
+  return new Promise((resolve) => {
+    $('ask-box').hidden = false;
+    $('ask-question').textContent = question;
+    $('ask-input').hidden = true;
+    $('ask-options').innerHTML = '';
+    const file = $<HTMLInputElement>('ask-file');
+    file.value = '';
+    file.hidden = false;
+    $('ask-send').hidden = false;
+    $('ask-send').textContent = 'Attach';
+    const finish = (v: PickedFile | null) => {
+      $('ask-box').hidden = true;
+      file.hidden = true;
+      log(v ? `Attached ${v.name}` : 'No file attached', 'user');
+      resolve(v);
+    };
+    $('ask-send').onclick = async () => {
+      const f = file.files?.[0];
+      if (!f) return finish(null);
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      finish({ name: f.name, type: f.type, data: btoa(bin) });
+    };
+    $('ask-cancel').onclick = () => finish(null);
+  });
+}
+
 function confirmSubmit(c: Confirmation): Promise<boolean> {
   return new Promise((resolve) => {
     $('confirm-box').hidden = false;
     $('confirm-warning').hidden = !c.warning;
     $('confirm-warning').textContent = c.warning ? `⚠ ${c.warning}` : '';
-    $('confirm-table').innerHTML = c.fields.map((f) => `<tr><th>${esc(f.label)}</th><td>${esc(f.value)}</td></tr>`).join('');
+    $('confirm-checks').hidden = !c.checks?.length;
+    $('confirm-checks').innerHTML = (c.checks || []).map((x) => `<li>${esc(x)}</li>`).join('');
+    // Where each value came from, so a guessed value stands out
+    $('confirm-table').innerHTML = c.fields.map((f) => `<tr><th>${esc(f.label)}</th><td>${esc(f.value)}` +
+      (f.source ? `<span class="src${f.guess ? ' guess' : ''}">${f.guess ? '⚠ ' : ''}${esc(f.source)}</span>` : '') + '</td></tr>').join('');
     const done = (v: boolean) => {
       $('confirm-box').hidden = true;
       log(v ? `Confirmed: ${c.button}` : 'Declined', 'user');
@@ -126,7 +162,7 @@ $('prompt-form').onsubmit = async (e) => {
   $('run-btn').hidden = true;
   $('stop-btn').hidden = false;
   document.body.dataset.agent = 'running';
-  const result = await runTask(prompt, { step: log, ask, confirm: confirmSubmit, isStopped: () => stopped });
+  const result = await runTask(prompt, { step: log, ask, askFile, confirm: confirmSubmit, isStopped: () => stopped });
   document.body.dataset.agent = result.status;
   $('run-btn').hidden = false;
   $('stop-btn').hidden = true;
@@ -292,6 +328,7 @@ $('teach-stop').onclick = async () => {
 $('teach-save').onclick = async () => {
   const r = await api('/api/playbooks', 'POST', {
     site: teachSite, task: $<HTMLInputElement>('teach-name').value.trim(), steps: $<HTMLTextAreaElement>('teach-draft').value,
+    events: teachEvents,   // replayed as a workflow: fixed steps run directly, values still come from each request
   });
   $('teach-review').hidden = true;
   $('teach-status').textContent = r.status === 'active' ? '✅ Playbook saved and active.' : '✅ Saved — waiting for an admin to approve it.';
@@ -318,3 +355,6 @@ async function loadPlaybooks() {
 // ---------------------------------------------------------------- start
 
 (async () => ((await getAccessToken()) ? showSignedIn() : showSignedOut()))();
+
+// For automated tests of the page reader (tests/probe.mjs)
+(window as any).__officeAssistantDebug = { snapshot, act, targetTab };

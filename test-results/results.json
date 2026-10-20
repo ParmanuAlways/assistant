@@ -37,7 +37,7 @@
   {
     "name": "Test connection to the model works",
     "ok": true,
-    "detail": "✅ Connected (65 ms) · structured output: JSON schema · system role: yes"
+    "detail": "✅ Connected (119 ms) · structured output: JSON schema · system role: yes"
   },
   {
     "name": "Server rejects a custom endpoint when policy forbids it",
@@ -72,12 +72,12 @@
   {
     "name": "Confirmation showed the filled form before submit",
     "ok": true,
-    "detail": "Employee IDEMP1042Leave TypeCasual LeaveFrom Date2026-10-19To Date2026-10-21Reasonfamily functionEmergency Contact Number9123456780Reporting ManagerPriya Sharma"
+    "detail": "Employee IDEMP1042from your profile (employee id)Leave TypeCasual Leavefrom your requestFrom Date2026-10-19worked out from your requestTo Date2026-10-21worked out from your requestReasonfamily functionfrom your requestEmergency Contact Number9123456780from your profile (emergency contact)Reporting ManagerPriya Sharmafrom your profile (manager)"
   },
   {
     "name": "Leave really saved in the portal with correct details",
     "ok": true,
-    "detail": "{\"id\":1,\"ref\":\"LR-1001\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Casual Leave\",\"from_date\":\"2026-10-19\",\"to_date\":\"2026-10-21\",\"days\":3,\"reason\":\"family function\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-19 09:53:33\"}"
+    "detail": "{\"id\":1,\"ref\":\"LR-1001\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Casual Leave\",\"from_date\":\"2026-10-19\",\"to_date\":\"2026-10-21\",\"days\":3,\"reason\":\"family function\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 02:53:47\"}"
   },
   {
     "name": "Panel shows the leave reference to the user",
@@ -97,7 +97,7 @@
   {
     "name": "Task 2 saved correctly",
     "ok": true,
-    "detail": "{\"id\":2,\"ref\":\"LR-1002\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Sick Leave\",\"from_date\":\"2026-11-02\",\"to_date\":\"2026-11-02\",\"days\":1,\"reason\":\"medical checkup\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-19 09:53:47\"}"
+    "detail": "{\"id\":2,\"ref\":\"LR-1002\",\"username\":\"ravi\",\"emp_id\":\"EMP1042\",\"leave_type\":\"Sick Leave\",\"from_date\":\"2026-11-02\",\"to_date\":\"2026-11-02\",\"days\":1,\"reason\":\"medical checkup\",\"emergency_contact\":\"9123456780\",\"manager\":\"Priya Sharma\",\"status\":\"Pending\",\"created_at\":\"2026-10-20 02:54:04\"}"
   },
   {
     "name": "Declining the confirmation stops the task and submits nothing",
@@ -112,7 +112,7 @@
   {
     "name": "Timeline records request, pages, model decisions, results, answer, confirmation, screenshots",
     "ok": true,
-    "detail": "user_message, page_snapshot, model_action, action_result, user_answer, profile_learned, screenshot, confirmation, task_finished"
+    "detail": "user_message, page_snapshot, plan, model_action, action_result, user_answer, profile_learned, screenshot, confirmation, task_finished, experience_saved"
   },
   {
     "name": "Screenshots load in the timeline",
@@ -155,6 +155,11 @@
     "detail": "{\"error\": \"[Errno 111] Connection refused\", \"fallback\": \"stand-in-v1\", \"model\": \"stand-in-v1\", \"url\": \"http://llm.office.local:9999/v1\"}"
   },
   {
+    "name": "Pre-submit verifier flags a form that does not match the request",
+    "ok": true,
+    "detail": "[[\"Your request says 05 Jan 2027, but no field on the form has that date.\"]]"
+  },
+  {
     "name": "Every settings change is in the audit log",
     "ok": true,
     "detail": "3 settings_changed events"
@@ -187,11 +192,11 @@
   {
     "name": "Integrity check passes on the untouched log",
     "ok": true,
-    "detail": "✔ Chain valid — 125 events checked"
+    "detail": "✔ Chain valid — 132 events checked"
   },
   {
     "name": "Integrity check detects a tampered record",
     "ok": true,
-    "detail": "✖ TAMPERING DETECTED at event #26 (user_answer, task 86eec2b3-192a-4819-80ac-d04f80ab8cb8, step 25) after 25 valid events"
+    "detail": "✖ TAMPERING DETECTED at event #27 (user_answer, task 236c021e-836b-439a-8068-5827d168885d, step 26) after 26 valid events"
   }
 ]

@@ -22,6 +22,7 @@ from pydantic import BaseModel
 
 import agent
 import db
+import skills
 
 KC_ISSUER = os.environ.get("KC_ISSUER", "http://keycloak.office.local:8080/realms/company")
 CLIENT_ID = os.environ.get("KC_CLIENT_ID", "browser-agent")
@@ -359,7 +360,7 @@ def history_for_model(task_id):
         p = json.loads(r["payload"])
         if r["event_type"] == "model_action":
             a = p["action"]
-            out.append({"did": {k: a[k] for k in ("action", "id", "value", "url", "question", "field") if k in a},
+            out.append({"did": {k: a[k] for k in ("action", "id", "value", "url", "question", "field", "fields") if k in a},
                         "on": p.get("element")})
         elif r["event_type"] == "action_result":
             out.append({"result": p})
@@ -372,6 +373,53 @@ class StepIn(BaseModel):
     page: dict
     last_result: dict | None = None
     user_answer: dict | None = None
+    screenshot_b64: str | None = None   # sent when the backend asked for one (vision fallback)
+
+
+PLAN_ON = os.environ.get("AGENT_PLAN", "1") == "1"
+WORKFLOW_ON = os.environ.get("AGENT_WORKFLOWS", "1") == "1"
+LAST_PAGE_TEXT: dict[str, str] = {}   # task_id -> page text seen before the latest action
+TASK_STATE: dict[str, dict] = {}      # task_id -> working memory (plan, workflow replay, sign-out, failures)
+FAIL_FIX = "The model did not give a usable answer."
+
+
+def is_login_page(page: dict) -> bool:
+    return any(e.get("type") == "password" for e in page.get("elements", []))
+
+
+def where_am_i(page: dict) -> str:
+    """The URL that best says where the work is: the main frame of a frameset, else the page."""
+    for f in page.get("frames") or []:
+        name, _, url = f.partition(": ")
+        if name in ("main", "content", "body", "workspace"):
+            return url
+    return page.get("url") or ""
+
+
+def task_values(task_id):
+    """What the user answered and what the assistant typed in this task (for value provenance)."""
+    answers, typed = [], []
+    for r in con.execute("SELECT event_type, payload FROM events WHERE task_id=? AND event_type IN "
+                         "('user_answer','model_action')", (task_id,)):
+        p = json.loads(r["payload"])
+        if r["event_type"] == "user_answer":
+            answers.append(str(p.get("answer") or ""))
+        else:
+            a = p.get("action") or {}
+            if a.get("value"):
+                typed.append(str(a["value"]))
+            typed += [str(f.get("value")) for f in a.get("fields") or []]
+    return answers, typed
+
+
+def build_confirmation(task_id, t, page, confirm, profile):
+    """Adds where each value came from and the pre-submit checks to a confirmation."""
+    answers, typed = task_values(task_id)
+    confirm["fields"] = agent.provenance(confirm["fields"], t["prompt"], profile, answers, typed, today())
+    confirm["checks"] = agent.verify_submission(t["prompt"], confirm["fields"], today(), confirm.get("row", ""),
+                                                page.get("text") or "")
+    confirm["fields"] = [{k: v for k, v in f.items() if not k.startswith("_")} for f in confirm["fields"]]
+    return confirm
 
 
 @app.post("/api/tasks/{task_id}/step")
@@ -382,12 +430,33 @@ def step(task_id: str, body: StepIn, u: User = Depends(current_user)):
     pol = policy()
     if t["steps"] >= pol["max_steps"]:
         return finish_internal(task_id, u, "failed", f"Stopped after {pol['max_steps']} steps.", act_only=True)
+    st = TASK_STATE.setdefault(task_id, {"fails": 0})
     page = body.page
     for el in page.get("elements", []):        # passwords never leave the browser, but be sure
         if el.get("type") == "password":
             el["value"] = ""
     if body.last_result is not None:
-        db.log_event(con, u.emp_id, "action_result", mask(body.last_result), task_id=task_id, url=page.get("url"))
+        # Check what the action changed, so the model sees the effect, not just "clicked"
+        res = mask(body.last_result)
+        observed = []
+        if where_am_i(page) != st.get("last_where"):
+            observed.append(f"now on {page.get('title') or ''} {where_am_i(page)}".strip())
+        if page.get("errors"):
+            observed.append("errors shown: " + " | ".join(page["errors"])[:300])
+        elif where_am_i(page) == st.get("last_where"):
+            # same page: say what appeared ("Selected seat: C3", "Item added"), so the effect of the action is visible
+            new = agent.text_added(LAST_PAGE_TEXT.get(task_id) or "", page.get("text") or "")
+            if new:
+                observed.append("the page now shows: " + new)
+        last_kind = (con.execute("SELECT payload FROM events WHERE task_id=? AND event_type='model_action' ORDER BY seq DESC "
+                                 "LIMIT 1", (task_id,)).fetchone() or {"payload": "{}"})["payload"]
+        if ('"action": "click"' in last_kind and (page.get("text") or "") == LAST_PAGE_TEXT.get(task_id)
+                and not res.get("dialog")):
+            observed.append("the page did not change")   # (typing changes field values, not the page text)
+        if observed:
+            res["observed"] = "; ".join(observed)
+        db.log_event(con, u.emp_id, "action_result", res, task_id=task_id, url=page.get("url"))
+        st["fails"] = 0 if body.last_result.get("ok") and not page.get("errors") else st["fails"] + 1
     if body.user_answer:
         ans = body.user_answer
         db.log_event(con, u.emp_id, "user_answer", mask(ans), task_id=task_id, url=page.get("url"))
@@ -398,91 +467,184 @@ def step(task_id: str, body: StepIn, u: User = Depends(current_user)):
                         (u.emp_id, field, ans["answer"], db.now()))
             con.commit()
             db.log_event(con, u.emp_id, "profile_learned", mask({"field": field, "value": ans["answer"]}), task_id=task_id)
+    shot_name = None
+    if body.screenshot_b64:
+        shot_name = f"{task_id}-{uuid.uuid4().hex[:8]}.png"
+        open(os.path.join(SHOT_DIR, shot_name), "wb").write(base64.b64decode(body.screenshot_b64.split(",")[-1]))
     db.log_event(con, u.emp_id, "page_snapshot", {
         "title": page.get("title"), "text_excerpt": (page.get("text") or "")[:600], "notices": page.get("notices"),
-        "elements": [{k: e.get(k) for k in ("id", "tag", "type", "label", "text", "value", "required")}
-                     for e in page.get("elements", [])][:80]}, task_id=task_id, url=page.get("url"))
+        "errors": page.get("errors"), "frames": page.get("frames"), "popup": page.get("popup"),
+        "elements": [{k: e.get(k) for k in ("id", "tag", "type", "label", "text", "value", "required", "frame", "menu", "row")}
+                     for e in page.get("elements", [])][:80]}, task_id=task_id, url=page.get("url"), screenshot=shot_name)
 
     host = urlparse(page.get("url") or "").hostname or ""
     on_allowed_site = any(fnmatch.fnmatch(host, s) for s in pol["allowed_sites"])
     if host and not on_allowed_site and t["steps"] > 0:
         return finish_internal(task_id, u, "failed", f"Stopped: {host} is not an allowed site.", act_only=True)
-    playbooks = [dict(r) for r in con.execute("SELECT site, task, steps, source FROM site_playbooks WHERE status='active'")]
+    playbooks = [dict(r) for r in con.execute("SELECT id, site, task, steps, source, macro FROM site_playbooks WHERE status='active'")]
+    all_playbooks = playbooks
     if any(p["source"] == "teach" for p in playbooks):
         playbooks = agent.select_playbooks(playbooks, t["prompt"], host)
+    playbooks = [{k: p[k] for k in ("site", "task", "steps")} for p in playbooks]
     profile = get_profile(u.emp_id)
     if colleagues := directory_lookup(t["prompt"]):
         profile["colleagues_from_company_directory"] = colleagues
-    messages = agent.build_messages(t["prompt"], profile, playbooks, history_for_model(task_id),
-                                    page, today(), WITH_CALENDAR, model_cfg(u.emp_id)["context_tokens"])
     cfg = model_cfg(u.emp_id)
+    extra = []
+
+    # Signed out in the middle of a task (session expiry): remember where we were, resume after sign-in
+    same_site = urlparse(st.get("last_good") or "").hostname == host
+    if is_login_page(page):
+        if t["steps"] > 0 and same_site and not st.get("signed_out"):   # bounced to sign-in inside the same site
+            st["signed_out"], st["resume_at"] = True, st.get("last_good")
+            db.log_event(con, u.emp_id, "signed_out_detected", {"resume_at": st["resume_at"]}, task_id=task_id)
+    else:
+        if st.pop("signed_out", False) and st.get("resume_at"):
+            st["resume_note"] = 4
+        st["last_good"] = where_am_i(page)
+    if st.get("resume_note"):
+        st["resume_note"] -= 1
+        extra.append(f"NOTE: the site signed you out during the task and the user signed in again. Continue where you "
+                     f"were: {st['resume_at']} (navigate there if needed). Values typed before may be lost: check the form.")
+
+    # First step: a workflow seen before (taught, or a past success), else a short plan
+    if t["steps"] == 0 and "workflow" not in st:
+        st["workflow"] = skills.pick_workflow(con, t["prompt"], all_playbooks) if WORKFLOW_ON else None
+        if st["workflow"]:
+            db.log_event(con, u.emp_id, "workflow_selected", {"source": st["workflow"]["source"],
+                                                              "label": st["workflow"]["label"],
+                                                              "steps": st["workflow"]["steps"]}, task_id=task_id)
+        elif PLAN_ON:
+            try:
+                plan_msgs = agent.build_messages(t["prompt"], profile, playbooks, [], page, today(), WITH_CALENDAR,
+                                                 cfg["context_tokens"])
+                plan_msgs[0] = {"role": "system", "content": agent.PLAN_PROMPT}
+                plan_msgs[1]["content"] = plan_msgs[1]["content"].replace("Reply with the next action as one JSON object.",
+                                                                          "Reply with the plan as one JSON object.")
+                st["plan"] = agent.parse_plan(agent.call_model(cfg, plan_msgs, schema=agent.PLAN_SCHEMA))
+                db.log_event(con, u.emp_id, "plan", {"steps": st["plan"]}, task_id=task_id)
+            except Exception as e:
+                db.log_event(con, u.emp_id, "plan_skipped", {"error": str(e)[:200]}, task_id=task_id)
+    if st.get("plan"):
+        extra.append("PLAN (made at the start; adapt it if the page differs):\n" +
+                     "\n".join(f"{i + 1}. {x}" for i, x in enumerate(st["plan"])))
+
+    wf = st.get("workflow")
+    macro_act = None
+    if wf and not is_login_page(page) and not page.get("errors"):
+        macro_act, wf_hint = skills.suggest(wf, page, host)
+        if wf_hint:
+            extra.append(wf_hint)
+        if wf.get("misses", 0) >= 6:
+            db.log_event(con, u.emp_id, "workflow_drift", {"source": wf["source"], "cursor": wf["cursor"]}, task_id=task_id)
+            st["drift"] = 1
+            st["workflow"] = wf = None
+            macro_act = None
+    vision_ok = cfg.get("vision") or os.environ.get("AGENT_VISION") == "1"
+    image = body.screenshot_b64 if body.screenshot_b64 and vision_ok else None
+    messages = agent.build_messages(t["prompt"], profile, playbooks, history_for_model(task_id),
+                                    page, today(), WITH_CALENDAR, cfg["context_tokens"], extra, image)
     act, reply, used = None, "", cfg
-    try:
-        reply = agent.call_model(cfg, messages)
-    except Exception as e:
-        fallback = default_model_cfg()
-        db.log_event(con, u.emp_id, "model_error", {"model": cfg["model"], "url": cfg["url"], "error": str(e)[:300],
-                                                     "fallback": fallback["model"] if fallback["url"] != cfg["url"] else None},
-                     task_id=task_id)
-        if fallback["url"] == cfg["url"]:
-            return finish_internal(task_id, u, "failed", f"Model unavailable: {e}", act_only=True)
-        used = fallback
-        reply = agent.call_model(used, messages)
-    try:
-        act = agent.parse_action(reply)
-    except Exception as e:  # one retry with the error shown to the model
-        db.log_event(con, u.emp_id, "model_parse_error", {"error": str(e)[:200], "reply": reply[:500]}, task_id=task_id)
-        messages += [{"role": "assistant", "content": reply},
-                     {"role": "user", "content": f"That was not valid ({e}). Reply with ONE JSON object only."}]
-        reply = agent.call_model(used, messages)
+    fix = st.get("fix_field")
+    if fix and body.user_answer and body.user_answer.get("field") == fix["field"]:
+        st.pop("fix_field")
+        ans = str(body.user_answer.get("answer") or "").strip()
+        target = next((e for e in page.get("elements", []) if (e.get("label") or "") == fix["label"]), None)
+        if target and ans and not NON_ANSWER.search(ans):
+            macro_act = {"action": "select" if target["tag"] == "select" else "type", "id": target["id"], "value": ans,
+                         "thought": f"Entering the {fix['label']} you gave me."}
+    drawing = next((e for e in page.get("elements", []) if e.get("type") == "drawing" and e.get("rect")), None)
+    if image and drawing and st.pop("vision_reason", None) == "drawing":
+        try:
+            macro_act, target = agent.locate_in_drawing(cfg, t["prompt"], image, drawing, st.get("last_target", ""))
+            db.log_event(con, u.emp_id, "vision_locate", {"target": target, "action": macro_act}, task_id=task_id)
+            st["last_target"] = target if macro_act else st.get("last_target", "")
+        except Exception as e:
+            db.log_event(con, u.emp_id, "model_error", {"where": "vision_locate", "error": str(e)[:200]}, task_id=task_id)
+    if macro_act:
+        act, reply = macro_act, json.dumps({k: v for k, v in macro_act.items() if not k.startswith("_")})
+    else:
+        try:
+            reply = agent.call_model(cfg, messages)
+        except Exception as e:
+            fallback = default_model_cfg()
+            db.log_event(con, u.emp_id, "model_error", {"model": cfg["model"], "url": cfg["url"], "error": str(e)[:300],
+                                                         "fallback": fallback["model"] if fallback["url"] != cfg["url"] else None},
+                         task_id=task_id)
+            if fallback["url"] == cfg["url"]:
+                return finish_internal(task_id, u, "failed", f"Model unavailable: {e}", act_only=True)
+            used = fallback
+            reply = agent.call_model(used, messages)
         try:
             act = agent.parse_action(reply)
-        except Exception as e2:
-            db.log_event(con, u.emp_id, "model_parse_error", {"error": str(e2)[:200], "reply": reply[:500]}, task_id=task_id)
-            act = {"action": "fail", "summary": "The model did not give a usable answer.", "thought": ""}
+        except Exception as e:  # one retry with the error shown to the model
+            db.log_event(con, u.emp_id, "model_parse_error", {"error": str(e)[:200], "reply": reply[:500]}, task_id=task_id)
+            messages += [{"role": "assistant", "content": reply},
+                         {"role": "user", "content": f"That was not valid ({e}). Reply with ONE JSON object only."}]
+            reply = agent.call_model(used, messages)
+            try:
+                act = agent.parse_action(reply)
+            except Exception as e2:
+                db.log_event(con, u.emp_id, "model_parse_error", {"error": str(e2)[:200], "reply": reply[:500]}, task_id=task_id)
+                act = {"action": "fail", "summary": FAIL_FIX, "thought": ""}
+
+    def correct(note, event):
+        nonlocal messages
+        db.log_event(con, u.emp_id, event, {"action": act, "note": note}, task_id=task_id)
+        messages += [{"role": "assistant", "content": json.dumps({k: v for k, v in act.items() if not k.startswith("_")})},
+                     {"role": "user", "content": note}]
+        try:
+            return agent.parse_action(agent.call_model(used, messages))
+        except Exception:
+            return {"action": "fail", "summary": FAIL_FIX, "thought": ""}
+
+    by_id = {e["id"]: e for e in page.get("elements", [])}
+    ID_ACTIONS = ("click", "type", "select", "pick_date", "autocomplete", "upload", "hover")
+
+    # Recover from an element number that is not on the page (once), instead of giving up
+    if act["action"] in ID_ACTIONS and act.get("id") not in by_id:
+        act = correct(f"Element [{act.get('id')}] is not on this page. Choose an element from the ELEMENTS list "
+                      "(or navigate / ask_user).", "element_not_found")
+    if act["action"] == "fill_form":
+        act["fields"] = [f for f in act.get("fields", []) if f["id"] in by_id and str(f.get("value", "")).strip()]
+        if not act["fields"]:
+            act = correct("Those element numbers are not on this page or the values are empty. Use element numbers "
+                          "from the ELEMENTS list, or ask_user for values you don't know.", "element_not_found")
+    if act["action"] == "click_xy" and not image:
+        act = correct("click_xy is only possible with a screenshot. Use an element number from the list.", "element_not_found")
 
     # Loop guard: the same action again on an unchanged page means the model is stuck
     # Same action on the same element of the same page; element numbers alone are reused across pages
     def sig(a, el=None, page_url=None):
         el = el or {}
         return json.dumps({"action": a.get("action"), "value": a.get("value"), "url": a.get("url"),
+                           "fields": a.get("fields"),
                            "el": [el.get("tag"), el.get("text"), el.get("label")], "page": page_url}, sort_keys=True)
     recent = []
     for r in con.execute("SELECT url, payload FROM events WHERE task_id=? AND event_type='model_action' "
                          "ORDER BY seq DESC LIMIT 2", (task_id,)):
         p = json.loads(r["payload"])
         recent.append(sig(p["action"], p.get("element"), r["url"]))
-    cur_sig = lambda a: sig(a, next((e for e in page.get("elements", []) if e["id"] == a.get("id")), None), page.get("url"))
+    cur_sig = lambda a: sig(a, by_id.get(a.get("id")), page.get("url"))
     page_unchanged = (page.get("text") or "") == LAST_PAGE_TEXT.get(task_id)   # a real repeat changed nothing
+    looped = False
     if act["action"] not in ("done", "fail", "ask_user") and recent and recent[0] == cur_sig(act) and page_unchanged:
+        looped = True
         db.log_event(con, u.emp_id, "loop_detected", {"repeated": act}, task_id=task_id)
+        if wf:   # a replayed step that doesn't work: stop replaying, let the model decide
+            st["workflow"] = wf = None
+            st["drift"] = 1
         if len(recent) > 1 and recent[1] == cur_sig(act):
             act = {"action": "fail", "summary": "Stopped: the assistant kept repeating the same step.", "thought": ""}
         else:
-            messages += [{"role": "assistant", "content": reply}, {"role": "user", "content":
-                         "You already did exactly that in the previous step and the page is as shown. "
-                         "Choose a DIFFERENT action that makes progress (e.g. click a link or fill a field)."}]
-            try:
-                act = agent.parse_action(agent.call_model(used, messages))
-            except Exception:
-                act = {"action": "fail", "summary": "The model did not give a usable answer.", "thought": ""}
+            act = correct("You already did exactly that in the previous step and the page is as shown. "
+                          "Choose a DIFFERENT action that makes progress (e.g. click a link or fill a field).", "loop_correction")
             if cur_sig(act) == recent[0]:   # corrected, yet the same action again: never execute it twice
                 act = {"action": "fail", "summary": "Stopped: the assistant kept repeating the same step.", "thought": ""}
 
     # Reality checks: a claimed success must be visible on the page, and forms must be complete
     # before we ask the user to confirm. One correction round each; then report honestly.
-    def correct(note, event):
-        nonlocal messages
-        db.log_event(con, u.emp_id, event, {"action": act, "note": note}, task_id=task_id)
-        messages += [{"role": "assistant", "content": json.dumps(act)}, {"role": "user", "content": note}]
-        try:
-            return agent.parse_action(agent.call_model(used, messages))
-        except Exception:
-            return {"action": "fail", "summary": "The model did not give a usable answer.", "thought": ""}
-
-    submitted_something = con.execute(
-        "SELECT 1 FROM events WHERE task_id=? AND event_type='confirmation' AND payload LIKE '%\"approved\": true%'",
-        (task_id,)).fetchone()
+    submitted_something = went_through(task_id)
     # Claims of having changed something need proof on the page; "find X and tell me" answers don't
     claims_change = act["action"] == "done" and (submitted_something or agent.claims_action(act.get("summary", "")))
     prev_text = LAST_PAGE_TEXT.get(task_id, "")
@@ -524,16 +686,64 @@ def step(task_id: str, body: StepIn, u: User = Depends(current_user)):
             else:
                 act = {"action": "fail", "summary": f"Could not complete the form: {', '.join(missing)} still empty.",
                        "thought": ""}
+    # Pre-submit verifier: what the request spells out (dates, amounts, IDs) must be on the form. One correction.
+    if agent.needs_confirmation(act, page) and (fix := agent.row_fix(act, page, t["prompt"], today())):
+        db.log_event(con, u.emp_id, "row_corrected", {"from": act, "to": fix}, task_id=task_id)
+        act = fix
+    if (c := agent.needs_confirmation(act, page)):
+        answers, typed = task_values(task_id)
+        prov = agent.provenance(c["fields"], t["prompt"], profile, answers, typed, today())
+        bad = next((f for f in prov if f.get("_reference") or
+                    (f.get("_profile_key") and not agent.profile_fits(f["_profile_key"], f.get("label") or ""))), None)
+        asked = st.setdefault("fix_asked", set())
+        if bad and bad.get("label") and bad["label"] not in asked:
+            # e.g. the user's own phone in "Emergency Contact Number", or "my desk" as a desk number: ask for that value
+            asked.add(bad["label"])
+            field = re.sub(r"[^a-z0-9]+", "_", bad["label"].lower()).strip("_")
+            st["fix_field"] = {"field": field, "label": bad["label"]}
+            db.log_event(con, u.emp_id, "presubmit_mismatch", {"action": act, "note": f"ask for {bad['label']}"}, task_id=task_id)
+            act = {"action": "ask_user", "field": field, "question": f"What should I enter for '{bad['label']}'?",
+                   "remember": not ONE_OFF_FIELD.search(field), "thought": f"\"{bad.get('value')}\" is not right for {bad['label']}."}
+    if (c := agent.needs_confirmation(act, page)) and not st.get("verified_once"):
+        checks = [x for x in build_confirmation(task_id, t, page, c, profile)["checks"] if "myself" not in x]
+        if checks and drawing and vision_ok and st.get("vision_tries", 0) < 3 and any("selected" in x for x in checks):
+            # the wrong thing is selected in the drawing (e.g. seat C2 instead of C3): look at it again
+            st["vision_tries"] = st.get("vision_tries", 0) + 1
+            st["vision_reason"] = "drawing"
+            db.log_event(con, u.emp_id, "presubmit_mismatch", {"action": act, "note": " ".join(checks)}, task_id=task_id)
+            act = {"action": "look", "thought": "The page does not show what you asked for yet: looking at the drawing again."}
+            checks = []
+        if checks:
+            st["verified_once"] = True
+            fixed = correct("Before submitting, check the form against the GOAL: " + " ".join(checks) +
+                            " Fix the form (or, if it is right, click the same button again).", "presubmit_mismatch")
+            if fixed["action"] != "fail":   # no usable fix: the user sees the checks in the confirmation instead
+                act = fixed
 
-    element = next((e for e in page.get("elements", []) if e["id"] == act.get("id")), None)
-    if act["action"] in ("type", "select") and element and not str(act.get("value", "")).strip():
+    element = by_id.get(act.get("id"))
+    # Mechanical fixes for common slips
+    if act["action"] == "click" and element and element.get("type") == "file":
+        act = {"action": "upload", "id": act["id"], "thought": act.get("thought", ""),
+               "question": f"Which file should I attach for '{element.get('label') or 'the file field'}'?"}
+    if act["action"] == "upload" and element and (not act.get("question") or re.search(r"ask the user|which file to", act["question"], re.I)):
+        act["question"] = f"Which file should I attach for '{element.get('label') or 'the file field'}'?"
+    if act["action"] == "type" and element and element.get("readonly") and agent.parse_dates(act.get("value", ""), today()):
+        act = {**act, "action": "pick_date", "value": sorted(agent.parse_dates(act["value"], today()))[0]}
+    if act["action"] in ("type", "select", "autocomplete", "pick_date") and element and not str(act.get("value", "")).strip():
         # An empty value means the model doesn't know it: ask the person instead of typing nothing
         label = element.get("label") or element.get("text") or "this field"
         field = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
         act = {"action": "ask_user", "field": field, "question": f"What should I enter for '{label}'?",
                "remember": not ONE_OFF_FIELD.search(field), "thought": "I don't know this value."}
+    # Sign-in pages are the person's job (user name too): never fill them in, ask the user to sign in
+    if is_login_page(page) and (act["action"] in ("type", "fill_form", "autocomplete") or
+                                (act["action"] == "click" and element and element.get("type") == "submit")):
+        act = {"action": "ask_user", "field": "user_action",
+               "question": "Please sign in on the page yourself, then press Continue.",
+               "thought": "Signing in is done by you; I never type sign-in details."}
+        element = None
     blocked = None
-    if act["action"] in ("click", "type", "select") and not element:
+    if act["action"] in ID_ACTIONS and not element:
         blocked = f"element [{act.get('id')}] is not on the page"
     elif act["action"] == "type" and element and element.get("type") == "password":
         act = {"action": "ask_user", "field": "user_action",
@@ -544,31 +754,107 @@ def step(task_id: str, body: StepIn, u: User = Depends(current_user)):
         blocked = f"navigation to {act.get('url')} is outside the allowed sites"
     if blocked:
         act = {"action": "fail", "summary": f"Blocked by policy: {blocked}.", "thought": act.get("thought", "")}
+    # Don't give up on the first obstacle (once per task): wrong page, a widget that needs another approach
+    if act["action"] == "fail" and not act.get("summary", "").startswith(("Blocked", "Stopped", "Could not")) \
+            and act.get("summary") != FAIL_FIX and not st.get("fail_retry") and t["steps"] < pol["max_steps"] - 2:
+        st["fail_retry"] = True
+        retry = correct("Do not give up yet. If this is the wrong page, navigate to the start URL in the SITE PLAYBOOKS. "
+                        "If a field does not work, try another way (pick_date, autocomplete, the button or icon next to it, "
+                        "a pop-up window). Reply fail only if there is really no way.", "fail_retry")
+        if retry["action"] != "fail":
+            act = retry
+            element = by_id.get(act.get("id"))
+
+    # Vision fallback: before giving up, or when the target is a drawing, look at a screenshot (vision models only)
+    want_look = (act["action"] == "fail" and not act.get("summary", "").startswith(("Blocked", "Stopped"))) or \
+        (act["action"] == "click" and (element or {}).get("type") == "drawing")
+    if vision_ok and want_look and not image and st.get("vision_tries", 0) < 3:
+        st["vision_tries"] = st.get("vision_tries", 0) + 1
+        if (element or {}).get("type") == "drawing" or any(e.get("type") == "drawing" for e in page.get("elements", [])):
+            st["vision_reason"] = "drawing"
+        db.log_event(con, u.emp_id, "vision_fallback", {"instead_of": mask(act)}, task_id=task_id)
+        act = {"action": "look", "thought": "Taking a screenshot to see the page."}
+        element = None
+        st["fails"] = max(st["fails"], 2)
 
     LAST_PAGE_TEXT[task_id] = page.get("text") or ""
+    st["last_where"] = where_am_i(page)
     confirm = agent.needs_confirmation(act, page)
     if confirm and just_confirmed(task_id, element):
         confirm = None   # e.g. "Place order" then the site's own "Yes, place order" dialog: ask the user once
     if confirm:
+        confirm = build_confirmation(task_id, t, page, confirm, profile)
         # Doing the same final action twice in one task (a second "Send") is almost always a mistake
-        same = sum(1 for r in con.execute("SELECT payload FROM events WHERE task_id=? AND event_type='confirmation'", (task_id,))
-                   if json.loads(r["payload"]).get("approved") and json.loads(r["payload"]).get("button") == confirm["button"])
+        same = sum(1 for button, ok in approvals(task_id) if ok and button == confirm["button"])
         if same:
             confirm["warning"] = (f"You already approved \"{confirm['button']}\" {same} time(s) in this task. "
                                   "Approving again will do it again (for example, send a second email).")
+    fields_info = None
+    if act["action"] == "fill_form":
+        fields_info = []
+        for f in act["fields"]:
+            e = by_id.get(f["id"], {})
+            kind = "select" if e.get("tag") == "select" else "pick_date" if e.get("readonly") else "type"
+            fields_info.append({"id": f["id"], "label": e.get("label") or e.get("text"), "kind": kind})
+    from_workflow = "_macro_step" in act
+    if wf:
+        skills.advance(wf, act, element, fields_info)
+    act = {k: v for k, v in act.items() if not k.startswith("_")}
     con.execute("UPDATE tasks SET steps=steps+1, model=?, model_url=? WHERE task_id=?", (used["model"], used["url"], task_id))
     con.commit()
     db.log_event(con, u.emp_id, "model_action", {
-        "action": mask(act), "element": element and {k: element.get(k) for k in ("tag", "type", "label", "text")},
+        "action": mask(act), "element": element and {k: element.get(k) for k in ("tag", "type", "label", "text", "menu", "row",
+                                                                                   "frame", "readonly", "href")},
+        "fields_info": fields_info, "source": "workflow" if from_workflow else "model",
         "needs_confirmation": bool(confirm), "model": used["model"], "model_url": used["url"]},
         task_id=task_id, url=page.get("url"))
     if act["action"] in ("done", "fail"):
         status = "failed" if act["action"] == "fail" else "unverified" if act.get("unverified") else "completed"
         finish_internal(task_id, u, status, act.get("summary", ""))
-    return {"action": act, "needs_confirmation": bool(confirm), "confirmation": confirm, "host": host}
+    # Vision fallback: stuck or failing repeatedly -> ask for a screenshot with numbered boxes next step
+    want_screenshot = (looped or st["fails"] >= 2 or act["action"] == "look") and act["action"] not in ("done", "fail")
+    return {"action": act, "needs_confirmation": bool(confirm), "confirmation": confirm, "host": host,
+            "want_screenshot": want_screenshot}
 
 
-LAST_PAGE_TEXT: dict[str, str] = {}   # task_id -> page text seen before the latest action
+class DialogIn(BaseModel):
+    page: dict
+    id: int | None = None
+    message: str
+
+
+@app.post("/api/tasks/{task_id}/dialog")
+def site_dialog(task_id: str, body: DialogIn, u: User = Depends(current_user)):
+    """The site asked "Are you sure...?" (a native confirm) for an action the user had not approved: build the
+    confirmation to show the user, with the site's own question."""
+    t = own_task(task_id, u)
+    el = next((e for e in body.page.get("elements", []) if e["id"] == body.id), None) or {}
+    c = agent.confirmation_for(el, body.page, body.message)
+    c = build_confirmation(task_id, t, body.page, c, get_profile(u.emp_id))
+    db.log_event(con, u.emp_id, "site_dialog", {"message": body.message, "element": {k: el.get(k) for k in ("text", "row")}},
+                 task_id=task_id, url=body.page.get("url"))
+    return c
+
+
+def approvals(task_id) -> list[tuple[str, bool]]:
+    """Submits the user approved in this task, and whether each one went through. One the site rejected (an alert
+    such as "Please pick the approver", an error message, nothing happened) doesn't count."""
+    rows = list(con.execute("SELECT event_type, payload FROM events WHERE task_id=? AND event_type IN "
+                            "('confirmation','action_result') ORDER BY seq", (task_id,)))
+    out = []
+    for i, r in enumerate(rows):
+        c = json.loads(r["payload"])
+        if r["event_type"] != "confirmation" or not c.get("approved"):
+            continue
+        res = next((json.loads(x["payload"]) for x in rows[i + 1:] if x["event_type"] == "action_result"), None)
+        rejected = res is not None and ((res.get("dialog") or {}).get("kind") == "alert" or not res.get("ok") or
+                                        bool(re.search(r"errors shown|did not change", res.get("observed") or "")))
+        out.append((c.get("button"), not rejected))   # not reported yet: assume it went through (never do it twice)
+    return out
+
+
+def went_through(task_id) -> bool:
+    return any(ok for _, ok in approvals(task_id))
 
 
 def just_confirmed(task_id, element):
@@ -589,13 +875,39 @@ def just_confirmed(task_id, element):
 
 
 def finish_internal(task_id, u, status, summary, act_only=False):
-    con.execute("UPDATE tasks SET status=?, summary=?, ended_at=? WHERE task_id=? AND status='running'",
-                (status, summary, db.now(), task_id))
+    cur = con.execute("UPDATE tasks SET status=?, summary=?, ended_at=? WHERE task_id=? AND status='running'",
+                      (status, summary, db.now(), task_id))
     con.commit()
     db.log_event(con, u.emp_id, "task_finished", {"status": status, "summary": summary}, task_id=task_id)
+    if cur.rowcount:
+        record_outcome(task_id, u, status, summary)
     if act_only:
         return {"action": {"action": "fail" if status != "completed" else "done", "summary": summary},
                 "needs_confirmation": False, "confirmation": None}
+
+
+def record_outcome(task_id, u, status, summary):
+    """Playbook/workflow health, and learning from verified successes."""
+    st = TASK_STATE.pop(task_id, {})
+    LAST_PAGE_TEXT.pop(task_id, None)
+    wf = st.get("workflow") or {}
+    source = wf.get("source") or next((json.loads(r["payload"]).get("source") for r in con.execute(
+        "SELECT payload FROM events WHERE task_id=? AND event_type='workflow_selected'", (task_id,))), None)
+    con.execute("INSERT OR REPLACE INTO task_outcomes VALUES (?,?,?,?,?,?,?)",
+                (task_id, skills.main_site(con, task_id), source, status, summary[:300], st.get("drift", 0), db.now()))
+    con.commit()
+    if source and source.startswith("experience:"):
+        col = "successes" if status == "completed" else "failures"
+        con.execute(f"UPDATE experiences SET {col}={col}+1 WHERE id=?", (int(source.split(":")[1]),))
+        con.commit()
+    acted = con.execute("SELECT 1 FROM events WHERE task_id=? AND event_type='confirmation' AND payload LIKE "
+                        "'%\"approved\": true%'", (task_id,)).fetchone()
+    if status == "completed" and acted:
+        prompt = con.execute("SELECT prompt FROM tasks WHERE task_id=?", (task_id,)).fetchone()["prompt"]
+        exp = skills.learn_from_task(con, task_id, prompt, db.now())
+        if exp:
+            db.log_event(con, u.emp_id, "experience_saved", {"experience": exp}, task_id=task_id)
+
 
 
 class EventIn(BaseModel):
@@ -608,7 +920,7 @@ class EventIn(BaseModel):
 @app.post("/api/tasks/{task_id}/events")
 def add_event(task_id: str, body: EventIn, u: User = Depends(current_user)):
     t = own_task(task_id, u)
-    if body.event_type not in {"confirmation", "screenshot", "client_error", "user_cancelled"}:
+    if body.event_type not in {"confirmation", "screenshot", "client_error", "user_cancelled", "file_chosen"}:
         raise HTTPException(400, "Unknown event type")
     shot = None
     if body.screenshot_b64:
@@ -734,9 +1046,17 @@ def events_as_text(events):
         if k == "navigate":
             out.append(f'Opened page "{e.get("title")}" {e.get("url")}')
         elif k == "click":
-            out.append(f'Clicked {"link" if e.get("tag") == "a" else "button"} "{e.get("text") or e.get("label")}"')
+            out.append(f'Clicked {"link" if e.get("tag") == "a" else "button"} "{e.get("text") or e.get("label")}"'
+                       + (f' in the "{e["menu"]}" menu (opens on hover)' if e.get("menu") else "")
+                       + (f' in the table row "{e["row"][:60]}"' if e.get("row") else ""))
+        elif k == "fill" and e.get("autocomplete"):
+            out.append(f'Typed into "{e.get("label")}" and picked "{e.get("value")}" from the suggestions')
         elif k == "fill":
-            out.append(f'Typed "{e.get("value")}" into field "{e.get("label")}"')
+            out.append(f'{"A pop-up filled" if e.get("readonly") else "Typed"} "{e.get("value")}" into field "{e.get("label")}"')
+        elif k == "date":
+            out.append(f'Picked the date "{e.get("value")}" for "{e.get("label")}" in the calendar')
+        elif k == "upload":
+            out.append(f'Attached a file ("{e.get("value")}") to "{e.get("label")}"')
         elif k == "choose":
             out.append(f'Chose "{e.get("value")}" for "{e.get("label")}"')
     return "\n".join(f"{i + 1}. {x}" for i, x in enumerate(out))
@@ -764,6 +1084,7 @@ class PlaybookIn(BaseModel):
     site: str
     task: str
     steps: str
+    events: list[dict] | None = None   # the recording, replayed as a workflow later
 
 
 @app.get("/api/playbooks")
@@ -774,8 +1095,10 @@ def list_playbooks(u: User = Depends(current_user)):
 @app.post("/api/playbooks")
 def create_playbook(body: PlaybookIn, u: User = Depends(current_user)):
     status = "active" if "admin" in u.roles else "pending"
-    cur = con.execute("INSERT INTO site_playbooks (site, task, steps, updated_by, updated_at, status, source) "
-                      "VALUES (?,?,?,?,?,?, 'teach')", (body.site, body.task, body.steps, u.emp_id, db.now(), status))
+    events = body.events or []   # structure only: macro_from_teach keeps labels/buttons, drops sign-in and values
+    macro = json.dumps(skills.macro_from_teach(events)) if events else None
+    cur = con.execute("INSERT INTO site_playbooks (site, task, steps, updated_by, updated_at, status, source, macro) "
+                      "VALUES (?,?,?,?,?,?, 'teach', ?)", (body.site, body.task, body.steps, u.emp_id, db.now(), status, macro))
     con.commit()
     db.log_event(con, u.emp_id, "playbook_created", {"id": cur.lastrowid, "site": body.site, "task": body.task,
                                                      "status": status, "steps": body.steps})
@@ -802,6 +1125,29 @@ def put_playbook(pid: int, body: dict, u: User = Depends(require("admin"))):
     con.commit()
     db.log_event(con, u.emp_id, "playbook_changed", {"id": pid, "steps": body["steps"]})
     return playbooks(u)
+
+
+@app.get("/api/admin/playbook-health")
+def playbook_health(u: User = Depends(current_user)):
+    """How each site and each replayed workflow has been doing (auditors and admins)."""
+    if not {"auditor", "admin"} & set(u.roles):
+        raise HTTPException(403, "Auditors and admins only")
+    names = {f"playbook:{r['id']}": f"taught: {r['task']}" for r in con.execute("SELECT id, task FROM site_playbooks")}
+    names.update({f"experience:{r['id']}": f"learned: {r['goal'][:60]}" for r in con.execute("SELECT id, goal FROM experiences")})
+    return [{**h, "name": names.get(h["key"], h["key"])} for h in skills.health(con)]
+
+
+@app.get("/api/admin/experiences")
+def list_experiences(u: User = Depends(require("admin"))):
+    return [{**dict(r), "steps": json.loads(r["steps"])} for r in con.execute("SELECT * FROM experiences ORDER BY id DESC")]
+
+
+@app.delete("/api/admin/experiences/{eid}")
+def delete_experience(eid: int, u: User = Depends(require("admin"))):
+    con.execute("DELETE FROM experiences WHERE id=?", (eid,))
+    con.commit()
+    db.log_event(con, u.emp_id, "experience_deleted", {"id": eid})
+    return {"ok": True}
 
 
 @app.get("/api/health")

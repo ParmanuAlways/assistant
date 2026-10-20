@@ -201,3 +201,153 @@ Firefox-specific notes:
   (`policies.json` → `ExtensionSettings`), then open it from the toolbar as a sidebar.
 - In tests, WebDriver may not navigate to `moz-extension://` pages, so the test opens them from the browser
   window, as a user would, with geckodriver's `--allow-system-access`.
+
+# Part 4 — Hard web apps, verification and learning (19 Oct)
+
+Question: where does a browser agent fail on real enterprise web apps, and what makes it more reliable?
+Everything below is measured with the same local model as before (**Gemma 4 E4B, Q4, llama.cpp on 4 CPU cores**)
+and the same scripted "careful user" (answers questions, reads every confirmation, declines when the side panel
+warns about a repeat or a mismatch). Item 9 of the improvement list (fine-tuning) was left out on purpose.
+
+## The test app: "Legacy ERP" (`portal/legacy.py`)
+
+A deliberately old-fashioned app with the traps real intranet apps have:
+
+| Task | Traps |
+|---|---|
+| L1 travel request | own sign-in form; **frameset** (top/nav/main); menu that opens only on **hover**; read-only date boxes filled by a home-made **calendar** (clickable `<td>` cells); ASP.NET-style **`javascript:__doPostBack`** submit link guarded by a native **`confirm()`** |
+| L2 purchase request | **masked** price field (8500 → "8,500"); cost centre chosen in a **pop-up window** (`window.open` + `opener.setCostCentre`); approver **autocomplete** that only counts if a suggestion is clicked; **`alert()`** on missing values; `confirm()` on submit |
+| L3 approve PO-1077 | 35 orders, 10 per page (**pagination**); Approve/Reject buttons inside **Shadow DOM**, one pair per row; `confirm()` |
+| L4 timesheet | **file upload** (PDF); `alert()` on the success page |
+| L5 contact details | the **session expires** the first time the page is opened (sign in again mid-task); masked mobile field; postback Save |
+
+## Before and after
+
+Same harness, same model. "Before" is the original code (commit `9ec69e8`, run from a git worktree); "after" is
+the final code.
+
+| | Before | After | After, each task twice in a row* |
+|---|---|---|---|
+| L1 travel | ❌ 0/4 | ✅ 4/4 · 350 s | ✅ ✅ 312 s → **220 s** |
+| L2 purchase | ❌ 0/5 | ✅ 5/5 · 527 s | ✅ ✅ 446 s → **245 s** |
+| L3 approve PO | ❌ 0/2 | ✅ 2/2 · 296 s | ✅ ✅ 294 s → **178 s** |
+| L4 upload | ❌ 0/2 | ✅ 2/2 · 228 s | ✅ ✅ 234 s → **133 s** |
+| L5 contact (session expiry) | ❌ 0/2 | ✅ 2/2 · 213 s | ✅ ✅ 217 s → **129 s** |
+| **Legacy ERP total** | **0/5** | **5/5** | **10/10**, 2nd runs **40% faster** (1503 s → 905 s) |
+| Original intranet tasks (regression) | 5/7 (best earlier run) | **7/7**, 0 regressions | |
+| Canvas seat map (vision) | – | ❌ without vision · ✅ ✅ with vision (2/2) | |
+| Native pop-ups the user had to click | – | 0 | 0 |
+
+\*The run-twice column was measured one revision earlier (before the fixes listed under "Found by the
+regression run" below); the second run of each task replays the experience saved by the first.
+
+**Before:** every task died at the frameset. The old page reader saw **0 elements** there; the model guessed an
+element number and the policy guard stopped it ("element [1] is not on the page").
+
+**Original intranet tasks:** visitors and canteen, which failed in the best earlier run, now pass. The HR, helpdesk,
+expenses and rooms tasks still pass.
+
+## Found along the way (all fixed and in the code)
+
+The evaluation kept finding real problems, several of them in the new features themselves:
+
+- **Wrong row approved (old code)**: in a first run the model tried to approve **PO-1057** (same vendor) instead of
+  PO-1077. The new pre-submit check caught it and the careful user declined; the old code would have approved
+  the wrong order. Now the assistant itself clicks the same button in the row that matches the request, or pages
+  through the table to find it.
+- **Stale form submitted (old code)**: the rule-based stand-in clicked Submit on a form left from a declined task
+  (10–12 Dec). The verifier flags that the request said 5 Jan 2027. This is now an end-to-end check.
+- **Own phone as emergency contact (new code)**: with `fill_form` the model bulk-filled "Emergency Contact Number"
+  with the user's own phone from the profile. Provenance said so ("from your profile (phone)"), but nothing
+  objected. Now a profile value used in a field it is not for is a mismatch, and the assistant asks for that field
+  (and remembers the answer: the next leave task did not need to ask).
+- **"my desk" as a desk number (new code)**: provenance called it "from your request". Words that point at a value
+  are now flagged and the real value is asked for.
+- **False alarm (new code)**: on the room-booking confirm page the date is shown as text, not as a field, and the
+  verifier wrongly said it was missing. Values the page visibly shows now count.
+- **A rejected submit counted as submitted**: an `alert()` ("Please pick the approver from the suggestions") means
+  nothing was submitted; the agent now carries on instead of stopping with "unverified", and the "you already
+  approved this" warning ignores rejected attempts.
+- **Pop-up windows**: `window.open` pop-ups don't always report which tab opened them; a tab appearing right after
+  the assistant's action is now followed.
+- **Firefox**: an injected script whose page navigates away never settles in Firefox (Chrome rejects it), so the
+  agent froze after its first click. Injected calls now time out.
+- Smaller ones: the model aiming `pick_date` at the calendar icon; typing reporting suggestion lists; "saved/
+  updated/uploaded" as success words; the teach recorder losing clicks that navigate; sign-in pages left to the
+  person (the model had typed a user name into a sign-in form when a taught playbook mentioned it).
+
+## What changed (items 1–8 and 10)
+
+1. **Value provenance.** Every value in the confirmation says where it came from: *from your request*, *from your
+   profile (…)*, *you told me*, *already on the page*, *worked out from your request* (relative dates), or
+   **⚠ chosen by the assistant**.
+2. **Pre-submit verifier.** Before any final click, the dates, amounts, phone numbers and IDs in the request are
+   checked against the form (masks and formats understood: 8,500 = 8500, 91234-00000 = 9123400000,
+   21-Oct-2026 = 2026-10-21), and the table row against IDs like PO-1077. A mismatch goes back to the model once,
+   then to the user as a warning. The end-to-end test now has a check for it: the rule-based stand-in clicks Submit
+   on a form left over from a declined task (10–12 Dec), and the verifier flags that the request said 5 Jan 2027.
+   This was **a real bug the old code let through**.
+3. **Deeper browser control** (`extension/lib/page.ts`): all frames, open Shadow DOM, row text for buttons in tables,
+   links hidden in hover menus, home-made clickables (calendar cells, suggestion lists, `onclick` cells),
+   old-style table labels, read-only flags, error messages, canvases. Native `alert/confirm/prompt` are answered
+   by a hook in the page (only while a task runs). `confirm()` gets OK only for an action the user approved;
+   otherwise the user is asked with the site's own question. `javascript:` links are clicked in the page's own
+   world (they don't run from an extension's isolated world). Pop-up windows are followed and left when they
+   close. Typing reports masks and suggestion lists that appear.
+4. **High-level actions:** `pick_date` (opens the calendar, moves month by month, clicks the day, checks the box),
+   `autocomplete`, `fill_form`, `upload` (the user picks the file in the side panel), `hover`.
+5. **Plan, act, check, recover:** a short plan at the start, the observed effect of every action, recovery from
+   wrong element numbers, one "don't give up yet" retry, resuming after a mid-task sign-out (worked in L5), and
+   rejected submits (an `alert()`) don't count as submitted, so the agent fixes the form and tries again
+   (L2: the first "Create Request" was rejected because the approver wasn't picked from the suggestions).
+6. **Macro replay of taught workflows**: see below.
+7. **Vision fallback**: see below.
+8. **Learning from successful runs.** After a *verified* success the backend stores how it was done (buttons and
+   field labels only, never values) and replays it for similar requests. The fixed steps (menus, buttons) run
+   without the model; value steps stay with the model. Second runs needed 3–6 fewer model calls and were 40% faster.
+10. **Regression testing and playbook health.** `tests/unit_backend.py` (33 fast checks), `tests/regress.py`
+    (task-by-task comparison of two runs), `tests/run-regression.sh`. A health table on the audit dashboard shows
+    each site and each replayed workflow (runs, completed, last 5, last problem, "workflow stopped matching the site").
+
+## Teach mode on the Legacy ERP (item 6)
+
+A person demonstrates a travel request once (Mumbai, 4–6 Nov, Training); the travel task (Pune, 21–23 Oct, client
+visit) then runs twice with the taught workflow.
+
+- **Recording**: clicks inside frames, the hover menu, the calendar (folded into one "pick date" step per field),
+  the postback Submit. Sign-in is left out (the person always signs in).
+- **Draft playbook**: 12 steps, start URL, placeholders for the values; no demonstrated value copied.
+- **Replay**: both runs succeeded (4/4). The menu navigation ran without the model (2 steps replayed) and the model
+  filled the values. 267 s and 250 s, against 350 s without a workflow.
+
+## Vision fallback (item 7)
+
+Test: "book seat C3 on the seat map". The map is a `<canvas>`, so there is nothing in the DOM to click.
+Gemma 4 E4B was served with its image projector (`MMPROJ=gemma4-e4b-mmproj.gguf`, downloaded from the same
+Docker Hub artifact).
+
+- **Without vision: fails.** The model can't see inside the drawing.
+- **With vision: 2/2.** When the target is a drawing, the extension sends a screenshot with numbered boxes and the
+  backend asks two narrow questions: what to click ("C3"), then where it is, on a 2× close-up of just the
+  drawing, in Gemma's native `box_2d` format. A click inside a drawing is a selection and needs no confirmation;
+  the final "Book seat" does.
+- **Honest caveat:** this 4B model's pointing is rough. In a direct test it found the right seat in 3–4 of 6
+  tries, landing near the seat's edge. What makes it work is check-and-retry: the page says "Selected seat: …",
+  the pre-submit check compares that with the request, and the assistant looks again (run 2 needed three looks).
+  A larger vision model (Qwen2.5-VL 7B, Gemma 3 12B+) would point better; the pipeline does not change.
+
+## Regression testing (item 10)
+
+- `tests/unit_backend.py`: 33 fast checks (verifier, provenance, row fix, workflows, vision messages).
+- `tests/regress.py`: compares two evaluation runs task by task. It flagged three regressions in the first
+  regression run of the new code (the emergency-contact, "my desk" and room-date problems above); after the fixes it
+  reports **5/7 → 7/7, 0 worse**.
+- End-to-end: Chrome **40/40** (one new check for the verifier), Firefox **14/14**.
+
+## Caveats (Part 4)
+
+- One CPU-only 4B model and one run per task (two for the repeat column); expect variation between runs.
+- The Legacy ERP was built for this test. It reproduces common traps, but real legacy apps will have others.
+- The Legacy ERP traps were measured in Chrome; Firefox passed the standard end-to-end suite with the new code.
+- Several failures were found and fixed during this evaluation using these same tasks, so the "after" numbers are
+  optimistic for new sites. The regression suite exists to catch the next ones.

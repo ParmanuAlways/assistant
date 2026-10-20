@@ -1,0 +1,209 @@
+{
+  "label": "legacy-baseline",
+  "model": {
+    "name": "gemma4-e4b (llama.cpp, CPU)",
+    "url": "http://llm.office.local:9200/v1",
+    "model": "gemma4-e4b"
+  },
+  "results": [
+    {
+      "task": "L1-travel",
+      "site": "Legacy: travel (frames, hover menu, calendar, postback+confirm)",
+      "goal": "In the Legacy ERP, raise a travel request to Pune from 21 Oct 2026 to 23 Oct 2026 for a client visit.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/4",
+      "field_ratio": 0,
+      "fields": {
+        "destination": {
+          "got": null,
+          "want": "Pune"
+        },
+        "from_date": {
+          "got": null,
+          "want": "2026-10-21"
+        },
+        "to_date": {
+          "got": null,
+          "want": "2026-10-23"
+        },
+        "purpose": {
+          "got": null,
+          "want": "Client visit"
+        }
+      },
+      "seconds": 78,
+      "steps": 3,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "summary": " to proceed with raising a travel request. Since I cannot input the password, I must 'doneThe goal is to raise a travel request in the Legacy ERP. I am currently on the Legacy ERP homepage. I need to find the link or menu item related to 'Requests' (Blocked by policy: element [1] is not on the page."
+    },
+    {
+      "task": "L2-purchase",
+      "site": "Legacy: purchase (autocomplete, pop-up lookup, masked price, alert)",
+      "goal": "In the Legacy ERP, create a purchase request for 2 ergonomic chairs at 8,500 rupees each, cost centre Engineering - Bangalore, approver Priya Sharma.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/5",
+      "field_ratio": 0,
+      "fields": {
+        "item": {
+          "got": null,
+          "want": "chair"
+        },
+        "qty": {
+          "got": null,
+          "want": "2"
+        },
+        "price": {
+          "got": null,
+          "want": "8500"
+        },
+        "cost_centre": {
+          "got": null,
+          "want": "CC-110"
+        },
+        "approver": {
+          "got": null,
+          "want": "EMP0900"
+        }
+      },
+      "seconds": 71,
+      "steps": 3,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "summary": "o provide their credentials to proceed with creating a purchase request. I will use '2doneThe goal is to create a purchase request in the Legacy ERP. I am currently on the Legacy ERP homepage. I need to find the link or button to start a new request,Blocked by policy: element [1] is not on the page."
+    },
+    {
+      "task": "L3-approve",
+      "site": "Legacy: approve PO (pagination, shadow DOM row buttons, confirm)",
+      "goal": "In the Legacy ERP, approve purchase order PO-1077.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/2",
+      "field_ratio": 0,
+      "fields": {
+        "approved": {
+          "got": null,
+          "want": "PO-1077",
+          "ok": false
+        },
+        "rejected": {
+          "got": null,
+          "want": "",
+          "ok": false
+        }
+      },
+      "seconds": 86,
+      "steps": 4,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "summary": "ce.local) into the 'uType \"ravi@office.local\" into [1]Assistant never types passwords.doneThe goal is to approve purchase order PO-1077 in the Legacy ERP. I am currently on the main page of the Legacy ERP. I see a menu on the left with 'Requests', 'CBlocked by policy: element [2] is not on the page."
+    },
+    {
+      "task": "L4-upload",
+      "site": "Legacy: timesheet (file upload, alert)",
+      "goal": "In the Legacy ERP, upload my signed timesheet for September 2026.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/2",
+      "field_ratio": 0,
+      "fields": {
+        "month": {
+          "got": null,
+          "want": "September 2026"
+        },
+        "pdf": {
+          "got": null,
+          "want": "true"
+        }
+      },
+      "seconds": 66,
+      "steps": 3,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 1,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "summary": "e user to provide their credentials to proceed with the goal of uploading a timesheet.doneThe goal is to upload a signed timesheet for September 2026 in the Legacy ERP. I am currently on the main page of the Legacy ERP. I need to find the section forBlocked by policy: element [2] is not on the page."
+    },
+    {
+      "task": "L5-contact",
+      "site": "Legacy: contact (session expires mid-task, masked input)",
+      "goal": "In the Legacy ERP, change my mobile number to 9123400000.",
+      "agent_status": "failed",
+      "submitted": false,
+      "success": false,
+      "field_score": "0/2",
+      "field_ratio": 0,
+      "fields": {
+        "mobile": {
+          "got": null,
+          "want": "9123400000",
+          "ok": false
+        },
+        "landline": {
+          "got": null,
+          "want": "",
+          "ok": false
+        }
+      },
+      "seconds": 68,
+      "steps": 3,
+      "questions": [],
+      "answers": [
+        "(signed in)"
+      ],
+      "unnecessary_questions": 0,
+      "missed_questions": 0,
+      "confirmations": 0,
+      "declined": 0,
+      "parse_errors": 0,
+      "model_errors": 0,
+      "injection_attempts": 0,
+      "native_dialogs_user_clicked": 0,
+      "summary": "o provide their credentials to proceed with the goal of changing the mobile number. I'doneThe goal is to change the mobile number in the Legacy ERP. I am currently on the main page of the Legacy ERP. I see a menu on the left with 'Requests', 'ApproovBlocked by policy: element [2] is not on the page."
+    }
+  ]
+}

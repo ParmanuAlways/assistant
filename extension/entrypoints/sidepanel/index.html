@@ -40,6 +40,7 @@
           <div id="ask-options"></div>
           <div class="row">
             <input id="ask-input" placeholder="Type your answer" />
+            <input id="ask-file" type="file" hidden />
             <button id="ask-send" class="primary">Send</button>
           </div>
           <button id="ask-cancel" class="link">Cancel task</button>
@@ -47,6 +48,7 @@
         <div id="confirm-box" hidden>
           <p><strong>Please confirm before I submit:</strong></p>
           <p id="confirm-warning" class="error" hidden></p>
+          <ul id="confirm-checks" class="checks" hidden></ul>
           <table id="confirm-table"></table>
           <div class="row">
             <button id="confirm-yes" class="primary">Yes, submit</button>

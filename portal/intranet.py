@@ -121,7 +121,8 @@ def home(request: Request):
         links = "".join(f'<li><a href="http://{x}.office.local:8300/">{TITLES[x]}</a></li>' for x in SITES)
         return page(request, "Intranet", "<h2>Acme Intranet</h2><ul>"
                     '<li><a href="http://hr.office.local:8200/">HR Leave Portal</a></li>' + links +
-                    '<li><a href="http://mail.office.local:8400/">Webmail</a></li></ul>')
+                    '<li><a href="http://mail.office.local:8400/">Webmail</a></li>'
+                    '<li><a href="http://legacy.office.local:8500/">Legacy ERP</a></li></ul>')
     if r := need_login(request):
         return r
     links = {
