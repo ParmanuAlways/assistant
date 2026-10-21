@@ -27,6 +27,9 @@ infra/          Keycloak setup script, extension signing key
 tests/          browser tests (e2e.mjs, letters-shots.mjs, comms-shots.mjs, eval.mjs...) and tests/local/ unit tests
 ```
 
+Continuing the work (people or a new Claude session): start with [CLAUDE.md](CLAUDE.md): decisions, layout,
+how to run and test, environment traps, open items. A fresh machine is set up with `tests/setup-environment.sh`.
+
 ## Install
 
 Ready-made packages are in [release/0.2.0](release/0.2.0): Chrome `.crx` (signed) and zip, Firefox `.xpi` (unsigned),
