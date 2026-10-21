@@ -100,9 +100,10 @@ real model: intranet 7/7, Legacy ERP 10/10, teach 3/3, seat map 2/2, webmail 5/5
 - **Chrome holds plain-HTTP downloads**: the letters test passes `--unsafely-treat-insecure-origin-as-secure` for the demo
   e-Office (a real e-Office is HTTPS).
 - **Git**: pushing `main` works; pushing tags and creating GitHub Releases is not allowed from these sessions (403).
-- **Never commit** `infra/keys/extension-key.pem` (signs the .crx, fixes the extension ID). It is gitignored; a new
-  machine does not have it, so a new .crx would need it copied over (or a new key = new extension ID, and the Keycloak
-  redirect URI changes).
+- `infra/keys/extension-key.pem` signs the .crx and fixes the extension ID (`abkbnfmigkhijkaakbjmdnddinokicop`, which the
+  Keycloak redirect and IT's install policy use). The owner chose to keep it in this (public) repository; anyone can
+  therefore build an extension with this ID. Before real use, consider a new key kept private (new extension ID ->
+  update the Keycloak redirect URI and the policies).
 - The AI models (`/home/user/models`, several GB) are not in the repo: `MODELS=1 tests/setup-environment.sh`.
 - Do not `rm -rf` with globs or variables in paths: a safety check blocks it. Use new folders instead.
 
