@@ -1,4 +1,4 @@
-# Secrets: the extension signing key and backend encryption key must never be committed
+# Secrets (the old backend encryption key) must never be committed
 # infra/keys/extension-key.pem is committed on purpose (the owner chose to keep it in the repository)
 backend/secret.key
 
