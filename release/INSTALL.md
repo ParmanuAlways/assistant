@@ -1,5 +1,7 @@
 # Installing Office Assistant 0.2.0
 
+The files are in [`release/0.2.0/`](0.2.0) of this repository.
+
 The assistant is only a browser extension: no server of its own. It needs your Keycloak (sign-in) and an
 OpenAI-compatible AI model server in the office (llama.cpp, Ollama, vLLM...). Everything else stays in the browser.
 

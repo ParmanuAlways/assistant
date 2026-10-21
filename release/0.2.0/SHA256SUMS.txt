@@ -1,0 +1,4 @@
+3cdddc28eeb5ebed9a661136067f4e6d4cfe950e9a7656b2047ab81a4bdb6d09  office-assistant-0.2.0.crx
+26592239e753c88dd5ecf673ad151a3d48742ca6b159d26e39372ca1d829464a  office-assistant-0.2.0-chrome.zip
+de1a798f0a82a1c346fa5c2d17278cb10dc170dca6640de91a66b44673839308  office-assistant-0.2.0-firefox.xpi
+67721120e2a85ce80e41e0e59f415b6c5913a541e5386e73890d49e737488bea  office-assistant-0.2.0-sources.zip

@@ -29,8 +29,9 @@ tests/          browser tests (e2e.mjs, letters-shots.mjs, comms-shots.mjs, eval
 
 ## Install
 
-Ready-made packages (Chrome `.crx` and zip, Firefox `.xpi`) are on the repository's Releases page; how to
-install them on one PC or push them to every PC is in [release/INSTALL.md](release/INSTALL.md).
+Ready-made packages are in [release/0.2.0](release/0.2.0): Chrome `.crx` (signed) and zip, Firefox `.xpi` (unsigned),
+with checksums and [release notes](release/0.2.0/RELEASE-NOTES.md). How to install them on one PC or push them to every
+PC is in [release/INSTALL.md](release/INSTALL.md).
 
 ## Run the demo
 
