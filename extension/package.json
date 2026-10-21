@@ -1,6 +1,6 @@
 {
   "name": "office-assistant",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Offline AI browser assistant for intranet sites",
   "scripts": {
     "dev": "wxt",

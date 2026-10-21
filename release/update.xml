@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Host this next to the .crx on an intranet web server; ExtensionInstallForcelist points at it. -->
+<gupdate xmlns='http://www.google.com/update2/response' protocol='2.0'>
+  <app appid='abkbnfmigkhijkaakbjmdnddinokicop'>
+    <updatecheck codebase='https://intranet.example.gov.in/office-assistant/office-assistant-0.2.0.crx' version='0.2.0' />
+  </app>
+</gupdate>

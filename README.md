@@ -27,6 +27,11 @@ infra/          Keycloak setup script, extension signing key
 tests/          browser tests (e2e.mjs, letters-shots.mjs, comms-shots.mjs, eval.mjs...) and tests/local/ unit tests
 ```
 
+## Install
+
+Ready-made packages (Chrome `.crx` and zip, Firefox `.xpi`) are on the repository's Releases page; how to
+install them on one PC or push them to every PC is in [release/INSTALL.md](release/INSTALL.md).
+
 ## Run the demo
 
 ```bash

@@ -8,7 +8,7 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     name: 'Office Assistant',
     description: 'Offline AI assistant that operates intranet websites for you.',
-    version: '0.1.0',
+    version: '0.2.0',
     ...(browser === 'chrome' ? { key: EXTENSION_KEY } : {}),
     permissions: ['identity', 'storage', 'sidePanel', 'scripting', 'tabs', 'downloads', 'unlimitedStorage',
       ...(browser === 'chrome' ? ['offscreen'] : [])],   // offscreen: reading downloaded PDFs in Chrome's background

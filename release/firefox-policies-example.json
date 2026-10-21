@@ -1,0 +1,23 @@
+{
+  "policies": {
+    "ExtensionSettings": {
+      "office-assistant@office.local": {
+        "installation_mode": "force_installed",
+        "install_url": "https://intranet.example.gov.in/office-assistant/office-assistant-0.2.0-firefox.xpi"
+      }
+    },
+    "3rdparty": {
+      "Extensions": {
+        "office-assistant@office.local": {
+          "keycloakUrl": "https://sso.example.gov.in/realms/office",
+          "clientId": "browser-agent",
+          "models": [
+            { "id": 1, "name": "Gemma 3 12B (office GPU server)", "url": "http://ai.example.gov.in:11434/v1", "model": "gemma3:12b", "default": true }
+          ],
+          "allowedSites": ["*.example.gov.in"],
+          "letterSources": [{ "name": "e-Office", "hosts": ["eoffice.example.gov.in"] }]
+        }
+      }
+    }
+  }
+}

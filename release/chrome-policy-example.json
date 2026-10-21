@@ -1,0 +1,23 @@
+{
+  "ExtensionInstallForcelist": ["abkbnfmigkhijkaakbjmdnddinokicop;https://intranet.example.gov.in/office-assistant/update.xml"],
+  "3rdparty": {
+    "extensions": {
+      "abkbnfmigkhijkaakbjmdnddinokicop": {
+        "keycloakUrl": "https://sso.example.gov.in/realms/office",
+        "clientId": "browser-agent",
+        "models": [
+          { "id": 1, "name": "Gemma 3 12B (office GPU server)", "url": "http://ai.example.gov.in:11434/v1", "model": "gemma3:12b", "default": true }
+        ],
+        "allowedSites": ["*.example.gov.in"],
+        "maxSteps": 40,
+        "allowCustomEndpoints": false,
+        "letterSources": [{ "name": "e-Office", "hosts": ["eoffice.example.gov.in"] }],
+        "letterFolder": "eOffice",
+        "directoryUrl": "https://intranet.example.gov.in/directory.json",
+        "playbooks": [
+          { "site": "hr.example.gov.in", "task": "Leave applications", "steps": "Start URL: https://hr.example.gov.in/  Apply Leave." }
+        ]
+      }
+    }
+  }
+}
